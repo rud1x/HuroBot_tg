@@ -1,4 +1,4 @@
-# HURObot - Полный исправленный код (15 Мая 2025)
+# HURObot - Полный исправленный код (16 Мая 2025)
 import os
 import asyncio
 import sys
@@ -31,7 +31,7 @@ import telethon
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
 # ======================
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/ВАШ_ЛОГИН/ВАШ_РЕПОЗИТОРИЙ/main/hurobot.py"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/hurobot.py"
 VERSION_PATTERN = r"# HURObot - Полный исправленный код \((\d{1,2} \w+ \d{4})\)"
 
 async def force_update():
