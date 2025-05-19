@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (16 Мая 2025)
+    # HURObot - Полный исправленный код (19 Мая 2025)
 import os
 import asyncio
 import sys
