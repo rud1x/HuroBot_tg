@@ -1,4 +1,4 @@
-# HURObot - Полный исправленный код (16 Мая 2025)
+    # HURObot - Полный исправленный код (16 Мая 2025)
 import os
 import asyncio
 import sys
@@ -27,6 +27,8 @@ from telethon.tl.types import DocumentAttributeFilename
 from PIL import Image
 import io
 import telethon
+import whois
+import traceback
 
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
@@ -238,7 +240,7 @@ async def create_account():
         print(f"{COLORS['error']}❌ Неверный код подтверждения!{COLORS['reset']}")
     except Exception as e:
         print(f"{COLORS['error']}❌ Критическая ошибка: {str(e)}{COLORS['reset']}")
-        import traceback
+
         traceback.print_exc()
     finally:
         if client and client.is_connected():
@@ -484,8 +486,20 @@ async def run_account(account_num):
                     'description': 'Получает информацию о пользователе (ID, имя, телефон, статус, регистрация, описание).',
                     'syntax': '`.data` (в ответ на сообщение)',
                     'example': '`.data` (в ответ на сообщение)'
+                },
+                'osint': {
+                    'name': 'osint',
+                    'description': 'Проверка данных по IP/номеру/почте',
+                    'syntax': '`.osint` [значение]',
+                    'example': '`.osint 8.8.8.8` или `.osint example@mail.com` или `.osint +79991234567`'
+                },
+                'whois': {
+                    'name': 'whois',
+                    'description': 'Показывает информацию о домене (регистрация, владелец, DNS и т.д.)',
+                    'syntax': '`.whois` [домен]',
+                    'example': '`.whois google.com`'
+                },
                 }
-            }
 
             def get_usage_instructions(command_name, status=None):
                 """Возвращает инструкцию по использованию команды."""
@@ -981,6 +995,140 @@ async def run_account(account_num):
                                    "\n"
                                    "**HURObot // @hurodev**")
 
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.osint(?:\s+(.+))?$'))
+            async def osint_handler(event):
+                state.last_user_activity = time.time()
+                args = event.text.split(' ', 1)
+                if len(args) < 2:
+                    await event.edit(
+                        "<b>✦ Введите данные для проверки!\nПримеры:</b>\n"
+                        "➤ <code>.osint 8.8.8.8</code>\n"
+                        "➤ <code>.osint +79123456789</code>\n"
+                        "➤ <code>.osint example@mail.com</code>",
+                        parse_mode='html'
+                    )
+                    return
+                
+                target = args[1].strip()
+                await event.edit(f"<b>✦ Начинаю анализ:</b> <code>{target}</code>", parse_mode='html')
+                
+                try:
+                    # Определение типа данных
+                    if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', target):
+                        await ip_lookup(event, target)
+                    elif '@' in target:
+                        await mail_lookup(event, target)
+                    elif re.match(r'^\+?[\d\s\-\(\)]{7,}$', target):
+                        await phone_lookup(event, target)
+                    else:
+                        await event.edit("<b>✦ Неверный формат данных!</b>", parse_mode='html')
+                        
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤ <code>{str(e)}</code>", parse_mode='html')
+
+            async def ip_lookup(event, ip):
+                """Обработка IP-адреса"""
+                try:
+                    data = requests.get(f"http://ipwho.is/{ip}").json()
+                    if data['success']:
+                        response = (
+                            f"<b>✦ Результаты проверки IP:</b>\n"
+                            f"➤ <b>Цель:</b> <code>{ip}</code>\n"
+                            f"├ <b>Провайдер:</b> <code>{data['connection']['isp']}</code>\n"
+                            f"├ <b>Страна:</b> {data['flag']['emoji']} <code>{data['country']}</code>\n"
+                            f"├ <b>Город:</b> <code>{data['city']}</code>\n"
+                            f"├ <b>Координаты:</b> <code>{data['latitude']}, {data['longitude']}</code>\n"
+                            f"└ <b>Карта:</b> <a href='https://www.google.com/maps/@{data['latitude']},{data['longitude']},15z'>ссылка</a>\n"
+                            "\n<b>HURObot // @hurodev</b>"
+                        )
+                    else:
+                        response = "<b>✦ Не удалось получить данные по IP</b>"
+                    await event.edit(response, parse_mode='html')
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤ <code>{str(e)}</code>", parse_mode='html')
+
+            async def phone_lookup(event, phone):
+                """Обработка номера телефона"""
+                try:
+                    response = requests.get(
+                        f"https://htmlweb.ru/geo/api.php?json&telcod={phone}",
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+                    )
+                    data = response.json()
+                    
+                    if 'limit' in data and data['limit'] == 0:
+                        await event.edit("<b>✦ Лимит запросов!\n➤ Включите VPN</b>", parse_mode='html')
+                        return
+
+                    response_text = (
+                        f"<b>✦ Результаты проверки номера:</b>\n"
+                        f"➤ <b>Цель:</b> <code>{phone}</code>\n"
+                        f"├ <b>Страна:</b> <code>{data.get('country', {}).get('name', 'N/A')}</code>\n"
+                        f"├ <b>Оператор:</b> <code>{data.get('0', {}).get('oper', 'N/A')}</code>\n"
+                        f"└ <b>Часовой пояс:</b> <code>{data.get('capital', {}).get('tz', 'N/A')}</code>\n"
+                        "\n<b>HURObot // @hurodev</b>"
+                    )
+                    await event.edit(response_text, parse_mode='html')
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤ <code>{str(e)}</code>", parse_mode='html')
+
+            async def mail_lookup(event, mail):
+                """Проверка почты на утечки"""
+                try:
+                    result = subprocess.run(
+                        f"holehe {mail}",
+                        capture_output=True,
+                        text=True,
+                        shell=True,
+                        check=True
+                    )
+                    output = "\n".join([
+                        line.replace("[x]", "📛")
+                            .replace("[-]", "❌")
+                            .replace("[+]", "✅")
+                            .replace("Email used", "<b>✔️ Зарегистрирована</b>")
+                            .replace("Email not used", "<b>❌ Не зарегистрирована</b>")
+                        for line in result.stdout.split('\n')[4:-4]
+                    ])
+                    await event.edit(
+                        f"<b>✦ Результаты проверки почты {mail}:</b>\n{output}\n\n<b>HURObot // @hurodev</b>",
+                        parse_mode='html'
+                    )
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤<code>{str(e)}</code>", parse_mode='html')
+
+
+            # 15. .whois - Информация о домене
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.whois(?:\s+(.+))?$'))
+            async def whois_handler(event):
+                state.last_user_activity = time.time()
+                args = event.text.split(' ', 1)
+                if len(args) < 2:
+                    await event.edit(
+                        "<b>✦ Укажите домен!\n➤ Пример:</b>\n➤ <code>.whois google.com</code>",
+                        parse_mode='html'
+                    )
+                    return
+
+                domain = args[1].strip()
+                await event.edit(f"<b>✦ Проверяю WHOIS для:</b> <code>{domain}</code>", parse_mode='html')
+                
+                try:
+                    domain_info = whois.whois(domain)
+                    response = (
+                        f"<b>✦ Результаты WHOIS:</b>\n"
+                        f"➤ <b>Домен:</b> <code>{domain_info.domain_name}</code>\n"
+                        f"├ <b>Создан:</b> <code>{domain_info.creation_date}</code>\n"
+                        f"├ <b>Истекает:</b> <code>{domain_info.expiration_date}</code>\n"
+                        f"├ <b>Регистратор:</b> <code>{domain_info.registrar}</code>\n"
+                        f"├ <b>Владелец:</b> <code>{domain_info.registrant_name or 'N/A'}</code>\n"
+                        f"└ <b>Серверы:</b> <code>{', '.join(domain_info.name_servers) if domain_info.name_servers else 'N/A'}</code>\n"
+                        "\n<b>HURObot // @hurodev</b>"
+                    )
+                    await event.edit(response, parse_mode='html')
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤<code>{str(e)}</code>", parse_mode='html')
+
             # 14. .help - Справка по командам
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.help(?:\s+([a-zA-Z]+))?$'))
             async def help_handler(event):
@@ -1003,6 +1151,8 @@ async def run_account(account_num):
 ➤ `.iter` [-n] - Экспорт участников 
 ➤ `.up` [число] - Переупоминания 
 ➤ `.data` - Инфо о пользователе
+➤ `.osint` [телефон/ip/почта] - пробив
+➤ `.whois` [домен] - Информация о домене
 ➤ Для справки: `.help [название команды]`
 
 **HURObot // @hurodev**
@@ -1056,7 +1206,6 @@ async def main_menu():
             return
     except:
         pass
-
 
     while True:
         clear_screen()
