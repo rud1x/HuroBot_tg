@@ -21,9 +21,10 @@ echo "📥 Загрузка бота..."
 git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot
 
 # Настройка алиаса
-echo -e "\nalias hurobot='cd ~/hurobot && python hurobot.py'\nsource ~/.bashrc" >> ~/.bashrc
+echo -e "\nalias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc
+source ~/.bashrc
 
 # Инструкция
 echo -e "\n\033[1;32m✅ Установка завершена!\033[0m"
 echo -e "Для запуска бота введите: \033[1;36mhurobot\033[0m"
-echo -e "Если команда не работает, сначала выполните: \033[1;33msource ~/.bashrc\033[0m\n"
+echo -e "Если команда не работает, выполните: \033[1;33mexec bash\033[0m"
