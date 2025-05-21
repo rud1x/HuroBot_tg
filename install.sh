@@ -1,30 +1,64 @@
 #!/bin/bash
 
+# Цвета
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Анимация спиннера
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='⣾⣽⣻⢿⡿⣟⣯⣷'
+    
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+# Заголовок
+clear
+echo -e "${CYAN}"
+echo "╔══════════════════════════════╗"
+echo "║    Установка HURObot         ║"
+echo "╚══════════════════════════════╝"
+echo -e "\nTG - @hurodev\n"
+echo -e "${NC}"
+
 # Удаление старых версий
-rm -rf ~/hurobot 2>/dev/null
+(rm -rf ~/hurobot 2>/dev/null) & spinner
 
 # Обновление системы
-echo "🔄 Обновление пакетов..."
-pkg update -y -q && pkg upgrade -y -q
+(pkg update -y >/dev/null 2>&1 && pkg upgrade -y >/dev/null 2>&1) & spinner
+echo -e "\n${GREEN}✓ Система обновлена${NC}"
 
 # Установка зависимостей
-echo "📦 Установка компонентов..."
-pkg install -y -q python git libjpeg-turbo openssl
+(pkg install -y python git libjpeg-turbo openssl >/dev/null 2>&1) & spinner
+echo -e "${GREEN}✓ Зависимости установлены${NC}"
 
 # Python-библиотеки
-echo "🐍 Установка библиотек..."
-pip install -q --upgrade pip wheel
-pip install -q telethon requests pillow python-whois pytz
+(pip install -q --upgrade pip wheel >/dev/null 2>&1) & spinner
+(pip install -q telethon requests pillow python-whois pytz >/dev/null 2>&1) & spinner
+echo -e "${GREEN}✓ Библиотеки Python готовы${NC}"
 
 # Клонирование репозитория
-echo "📥 Загрузка бота..."
-git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot
+(git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot >/dev/null 2>&1) & spinner
+echo -e "${GREEN}✓ Бот загружен${NC}"
 
 # Настройка алиаса
-echo -e "\nalias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc
-source ~/.bashrc
+echo -e "alias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc
+source ~/.bashrc >/dev/null 2>&1
 
 # Инструкция
-echo -e "\n\033[1;32m✅ Установка завершена!\033[0m"
-echo -e "Для запуска бота введите: \033[1;36mhurobot\033[0m"
-echo -e "Если команда не работает, выполните: \033[1;33mexec bash\033[0m"
+echo -e "\n${CYAN}═══════════════════════════════════════════════════"
+echo -e "✅ Установка успешно завершена!"
+echo -e "═══════════════════════════════════════════════════${NC}"
+echo -e "\nДля запуска бота используйте команду:"
+echo -e "   ${YELLOW}hurobot${NC}"
+
