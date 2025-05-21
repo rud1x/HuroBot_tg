@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (19 Мая 2025)
+    # HURObot - Полный исправленный код (21 Мая 2025)
 import os
 import asyncio
 import sys
@@ -37,8 +37,38 @@ GITHUB_RAW_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/hurobo
 VERSION_PATTERN = r"# HURObot - Полный исправленный код \((\d{1,2} \w+ \d{4})\)"
 
 async def force_update():
-    """Принудительное обновление скрипта"""
+    """Принудительное обновление скрипта с установкой зависимостей"""
     try:
+        # URL файла requirements.txt в репозитории
+        REQUIREMENTS_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt"
+        
+        print(f"\n{COLORS['header']}Проверка зависимостей...{COLORS['reset']}")
+        
+        try:
+            # Скачиваем requirements.txt
+            response = requests.get(REQUIREMENTS_URL, timeout=10)
+            response.raise_for_status()
+            
+            # Сохраняем во временный файл
+            with open("temp_requirements.txt", "w", encoding="utf-8") as f:
+                f.write(response.text)
+            
+            # Устанавливаем библиотеки через pip
+            print(f"{COLORS['info']}Установка/обновление библиотек...{COLORS['reset']}")
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-r", "temp_requirements.txt", "--upgrade"],
+                check=True
+            )
+            print(f"{COLORS['success']}✓ Библиотеки успешно обновлены!{COLORS['reset']}")
+            
+            # Удаляем временный файл
+            os.remove("temp_requirements.txt")
+            
+        except Exception as e:
+            print(f"{COLORS['error']}❌ Ошибка установки библиотек: {str(e)}{COLORS['reset']}")
+            traceback.print_exc()
+        
+        # Далее идет оригинальный код обновления скрипта...
         print(f"\n{COLORS['header']}Проверка актуальности файлов...{COLORS['reset']}")
         
         # Получение удаленной версии
@@ -76,6 +106,7 @@ async def force_update():
         
     except Exception as e:
         print(f"{COLORS['error']}❌ Ошибка при обновлении: {str(e)}{COLORS['reset']}")
+        traceback.print_exc()
         return False
 
 # Проверка версии Telethon
