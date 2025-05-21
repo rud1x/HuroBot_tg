@@ -1,13 +1,19 @@
 #!/bin/bash
 
-# Установка зависимостей
+# Удаление старых версий
+rm -rf ~/hurobot &>/dev/null
+sed -i '/alias hurobot/d' ~/.bashrc &>/dev/null
+
+# Установка пакетов
 pkg update -y
-pkg install -y git python
-pip install --upgrade pip
-pip install telethon requests pillow python-whois pytz
+pkg install -y python git libjpeg-turbo libcrypt
+pip install --upgrade pip wheel
+
+# Установка зависимостей
+yes | pip install telethon requests pillow python-whois pytz
 
 # Клонирование репозитория
-git clone https://github.com/rud1x/HuroBot_tg.git ~/hurobot
+git clone --depth 1 https://github.com/rud1x/HuroBot_tg.git ~/hurobot
 
 # Создание алиаса
 echo 'alias hurobot="cd ~/hurobot && python hurobot.py"' >> ~/.bashrc
