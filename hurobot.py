@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (21 Мая 2025)
+    # HURObot - Полный исправленный код (22 Мая 2025)
 import os
 import asyncio
 import sys
@@ -150,18 +150,15 @@ def show_banner():
     except:
         version = "N/A"
     
-    print(f"""{COLORS['header']}
-██╗░░██╗██╗░░░██╗██████╗░░█████╗░██████╗░░█████╗░████████╗
-██║░░██║██║░░░██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝
-███████║██║░░░██║██████╔╝██║░░██║██████╔╝██║░░██║░░░██║░░░
-██╔══██║██║░░░██║██╔══██╗██║░░██║██╔══██╗██║░░██║░░░██║░░░
-██║░░██║╚██████╔╝██║░░██║╚█████╔╝██████╔╝╚█████╔╝░░░██║░░░
-╚═╝░░╚═╝░╚═════╝░╚═╝░░╚═╝░╚════╝░╚═════╝░░╚════╝░░░░╚═╝░░░
+    print(f"""{COLORS['accent1']}
+                __    ___  ___    ___  _____ 
+  /\  /\/\ /\  /__\  /___\/ __\  /___\/__   \ 
+ / /_/ / / \ \/ \// //  //__\// //  //  / /\/ 
+/ __  /\ \_/ / _  \/ \_// \/  \/ \_//  / /    
+\/ /_/  \___/\/ \_/\___/\_____/\___/   \/     
 
-Версия: {version}
-Телеграмм канал - @hurodev
-{COLORS['reset']}""")
-    print(f"{COLORS['accent2']}═{COLORS['reset']}" * 50)
+{COLORS['header']}Версия на {version} // Тгк - @hurodev\n{COLORS['reset']}""")
+    print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
 
 def clear_screen():
     """Очищает экран консоли (Windows или Linux)."""
@@ -212,15 +209,15 @@ async def delete_all_accounts():
 async def create_account():
     clear_screen()
     show_banner()
-    print(f"{COLORS['header']}Добавление нового аккаунта{COLORS['reset']}")
-    print(f"{COLORS['accent2']}═{COLORS['reset']}" * 50)
+    print(f"{COLORS['header']}ㅤㅤㅤДобавление нового аккаунта{COLORS['reset']}")
+    print(f"\n")
 
     client = None
     try:
         await safe_delete(TEMP_SESSION)
         
         while True:
-            phone = input(f"{COLORS['prompt']}Введите номер (+код страны номер, пример: +79123456789): {COLORS['reset']}").strip()
+            phone = input(f"{COLORS['prompt']}Введите номер [формат: +79123456789]: {COLORS['reset']}").strip()
             if re.match(r'^\+\d{8,15}$', phone):
                 break
             print(f"{COLORS['error']}❌ Неверный формат! Пример: +79123456789{COLORS['reset']}")
@@ -398,7 +395,7 @@ async def run_account(account_num):
         while running:
             user_input = await asyncio.get_event_loop().run_in_executor(
                 None, input, 
-                f"{COLORS['input']}Введите 1 для возврата в меню: {COLORS['reset']}"
+                f"{COLORS['prompt']}\n==>{COLORS['reset']}"
             )
             if user_input.strip() == '1':
                 running = False
@@ -1215,7 +1212,8 @@ async def run_account(account_num):
             print(f"{COLORS['prompt']}Аккаунт: {name} (+{phone}){COLORS['reset']}")
             print(f"{COLORS['header']}  .help -- список команд{COLORS['reset']}")
             print(f"{COLORS['header']}  .help [название команды] -- справка{COLORS['reset']}")
-            print(f"{COLORS['accent2']}═{COLORS['reset']}" * 50)
+            print(f"{COLORS['header']}Для выхода введите 1 {COLORS['reset']}")
+            print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
             await client.run_until_disconnected()
 
     except Exception as e:
@@ -1243,18 +1241,18 @@ async def main_menu():
         show_banner()
         await load_valid_accounts()
         accounts = sorted(ACCOUNT_DATA.keys())
-        print(f"{COLORS['header']}Доступные аккаунты:{COLORS['reset']}")
+        print(f"{COLORS['header']}ㅤㅤㅤДоступные аккаунты:{COLORS['reset']}")
         if accounts:
             for num in accounts:
-                print(f"{COLORS['input']}{num}.{COLORS['reset']} {COLORS['info']}{ACCOUNT_DATA[num]['name']} (+{ACCOUNT_DATA[num]['phone']}){COLORS['reset']}")
+                print(f"{COLORS['header']}[{num}]{COLORS['reset']} {COLORS['info']}{ACCOUNT_DATA[num]['name']} (+{ACCOUNT_DATA[num]['phone']}){COLORS['reset']}")
         else:
             print(f"{COLORS['error']}Нет доступных аккаунтов{COLORS['reset']}")     
         print(f"\n")
-        print(f"{COLORS['header']}0. Добавить новый аккаунт")
-        print(f"-. Удалить все аккаунты")
-        print(f"{COLORS['accent2']}═{COLORS['reset']}" * 50)
+        print(f"{COLORS['header']}[0] {COLORS['info']}Добавить новый аккаунт{COLORS['reset']}")
+        print(f"{COLORS['header']}[-] {COLORS['info']}Удалить все аккаунты{COLORS['reset']}")
+        print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
         
-        choice = input(f"{COLORS['prompt']}Выберите действие: {COLORS['reset']}")
+        choice = input(f"{COLORS['prompt']}\n==>{COLORS['reset']}")
         
         if choice == "0":
             await create_account()
