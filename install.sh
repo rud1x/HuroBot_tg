@@ -26,9 +26,9 @@ spinner() {
 clear
 echo -e "${CYAN}"
 echo "╔══════════════════════════════╗"
-echo "║    Установка HURObot         ║"
+echo "║    Установщик HURObot        ║"
 echo "╚══════════════════════════════╝"
-echo -e "\nTG - @hurodev\n"
+echo -e "TG - @hurodev\n"
 echo -e "${NC}"
 
 # Удаление старых версий
@@ -56,9 +56,7 @@ echo -e "alias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc
 source ~/.bashrc >/dev/null 2>&1
 
 # Инструкция
-echo -e "\n${CYAN}═══════════════════════════════════════════════════"
-echo -e "✅ Установка успешно завершена!"
-echo -e "═══════════════════════════════════════════════════${NC}"
-echo -e "\nДля запуска бота используйте команду:"
+echo -e "\n${CYAN}✅ Установка успешно завершена!""
+echo -e "Для запуска бота используйте команду:"
 echo -e "   ${YELLOW}hurobot${NC}"
 
