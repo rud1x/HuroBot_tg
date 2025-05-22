@@ -41,24 +41,34 @@ printf "\b✓\n"
 printf "${PURPLE}• Загружаем HURObot...${NC}"
 {
 rm -rf ~/hurobot 2>/dev/null
-git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot 2>/dev/null
+git clone https://github.com/rud1x/HuroBot_tg.git ~/hurobot >/dev/null 2>&1
 } & spinner
 printf "\b✓\n"
 
-# 3. Установка зависимостей из requirements.txt
+# 3. Установка зависимостей
 printf "${PURPLE}• Устанавливаем зависимости...${NC}"
 {
-cd ~/hurobot
+cd ~/hurobot 2>/dev/null
 python -m pip install --upgrade pip wheel >/dev/null 2>&1
 
 # Проверяем наличие requirements.txt
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt >/dev/null 2>&1 || {
-        # Если не получилось установить все сразу, пробуем по одной
-        while read lib; do
-            [ -n "$lib" ] && pip install "$lib" >/dev/null 2>&1
-        done < requirements.txt
-    }
+    # Устанавливаем все зависимости
+    pip install -r requirements.txt >/dev/null 2>&1
+    
+    # Проверяем каждую библиотеку отдельно
+    while read -r lib; do
+        # Пропускаем пустые строки и комментарии
+        [[ -z "$lib" || "$lib" == "#"* ]] && continue
+        
+        # Удаляем версии из названия (если есть)
+        clean_lib=$(echo "$lib" | cut -d'=' -f1 | cut -d'>' -f1 | cut -d'<' -f1)
+        
+        # Проверяем установлена ли библиотека
+        if ! pip show "$clean_lib" >/dev/null 2>&1; then
+            pip install "$lib" >/dev/null 2>&1
+        fi
+    done < requirements.txt
 else
     # Базовые библиотеки, если файл не найден
     pip install requests telethon pillow python-whois pytz >/dev/null 2>&1
@@ -76,6 +86,6 @@ printf "\b✓\n"
 
 # Завершение
 echo -e "\n${DARK_PURPLE}╔════════════════════════════════════╗"
-echo "║         Установка завершена!       ║"
+echo "║       Установка завершена!       ║"
 echo "╚════════════════════════════════════╝"
-echo -e "Для запуска: hurobot"
+echo -e "Для запуска: ${DARK_PURPLE}hurobot${NC}"
