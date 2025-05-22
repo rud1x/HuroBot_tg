@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Фиолетовая цветовая схема
+# Фиолетовые цвета
 PURPLE='\033[0;35m'
 DARK_PURPLE='\033[1;35m'
 NC='\033[0m'
@@ -31,40 +31,33 @@ echo -e "${NC}"
 printf "${PURPLE}• Исправляем окружение Termux...${NC}"
 {
 pkg uninstall curl libcurl -y >/dev/null 2>&1
-pkg install -y termux-exec curl libcurl python git libjpeg-turbo openssl
-termux-exec
-export LD_LIBRARY_PATH=$PREFIX/lib
-} >/dev/null 2>&1 & spinner
+pkg install -y termux-exec curl libcurl python git libjpeg-turbo openssl >/dev/null 2>&1
+termux-exec >/dev/null 2>&1
+export LD_LIBRARY_PATH=$PREFIX/lib >/dev/null 2>&1
+} & spinner
 printf "\b✓\n"
 
-# 2. Получение requirements.txt (3 попытки)
+# 2. Получение requirements.txt
 printf "${PURPLE}• Загружаем список библиотек...${NC}"
-for i in {1..3}; do
-    if curl -sL "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt" -o /tmp/huro_req.txt; then
-        break
-    elif [ $i -eq 3 ]; then
-        echo -e "\n${DARK_PURPLE}Не удалось загрузить requirements.txt, используем базовые библиотеки${NC}"
-        echo "requests" > /tmp/huro_req.txt
-        echo "telethon" >> /tmp/huro_req.txt
-        echo "pillow" >> /tmp/huro_req.txt
-    fi
-    sleep 2
-done & spinner
+REQ_FILE="/data/data/com.termux/files/usr/tmp/huro_req.txt"
+if ! curl -sL "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt" -o "$REQ_FILE" 2>/dev/null; then
+    printf "\n${PURPLE}Используем базовые библиотеки...${NC}"
+    echo "requests" > "$REQ_FILE"
+    echo "telethon" >> "$REQ_FILE"
+    echo "pillow" >> "$REQ_FILE"
+    echo "python-whois" >> "$REQ_FILE"
+    echo "pytz" >> "$REQ_FILE"
+fi & spinner
 printf "\b✓\n"
 
-# 3. Установка Python-зависимостей (с повтором)
+# 3. Установка Python-зависимостей
 printf "${PURPLE}• Устанавливаем Python-библиотеки...${NC}"
 {
 python -m pip install --upgrade pip wheel >/dev/null 2>&1
-
-# Первая попытка
-pip install -r /tmp/huro_req.txt >/dev/null 2>&1
-
-# Вторая попытка для проблемных библиотек
-grep -v "^#" /tmp/huro_req.txt | while read lib; do
-    pip install --no-cache-dir "$lib" >/dev/null 2>&1 || \
-    pip install --ignore-installed "$lib" >/dev/null 2>&1
-done
+pip install -r "$REQ_FILE" >/dev/null 2>&1 || \
+while read lib; do
+    [ -n "$lib" ] && pip install "$lib" >/dev/null 2>&1
+done < "$REQ_FILE"
 } & spinner
 printf "\b✓\n"
 
@@ -72,15 +65,15 @@ printf "\b✓\n"
 printf "${PURPLE}• Загружаем HURObot...${NC}"
 {
 rm -rf ~/hurobot 2>/dev/null
-git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot
+git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot 2>/dev/null
 } & spinner
 printf "\b✓\n"
 
 # Финал
 echo -e "\nalias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc
-source ~/.bashrc
+source ~/.bashrc >/dev/null 2>&1
 
 echo -e "\n${DARK_PURPLE}╔════════════════════════════════════╗"
 echo "║       Установка завершена!       ║"
 echo "╚════════════════════════════════════╝${NC}"
-echo -e "\n${PURPLE}Для запуска: ${DARK_PURPLE}hurobot${NC}"
+echo -e "Для запуска: hurobot"
