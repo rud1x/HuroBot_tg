@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# Цвета
-GREEN='\033[1;32m'
-CYAN='\033[1;36m'
-YELLOW='\033[1;33m'
-RED='\033[1;31m'
+# Фиолетовые цвета
+PURPLE='\033[0;35m'
+DARK_PURPLE='\033[1;35m'
+LIGHT_PURPLE='\033[1;95m'
 NC='\033[0m'
 
 # Функция для обработки ошибок
 error_exit() {
-    echo -e "${RED}ОШИБКА: $1${NC}" >&2
+    echo -e "${DARK_PURPLE}ОШИБКА: $1${NC}" >&2
     exit 1
 }
 
@@ -17,95 +16,97 @@ error_exit() {
 spinner() {
     local pid=$!
     local delay=0.1
-    local spinstr='|/-\'
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
+    while kill -0 $pid 2>/dev/null; do
+        for i in {0..9}; do
+            printf "\b${spinstr:$i:1}"
+            sleep $delay
+        done
     done
-    printf "    \b\b\b\b"
+    printf "\b "
 }
 
 # Заголовок
 clear
-echo -e "${CYAN}"
+echo -e "${DARK_PURPLE}"
 echo "╔════════════════════════════════════╗"
-echo "║      Установщик HURObot PRO        ║"
+echo "║      УСТАНОВЩИК HURObot            ║"
 echo "╚════════════════════════════════════╝"
-echo -e "TG - @hurodev\n${NC}"
+echo -e "${NC}"
 
 # Проверка интернета
-echo -e "${YELLOW}Проверка подключения к интернету...${NC}"
+printf "${PURPLE}• Проверка подключения...${NC}"
 if ! ping -c 1 google.com >/dev/null 2>&1; then
-    error_exit "Требуется интернет-соединение!"
+    error_exit "Нет интернета"
 fi
+printf "\b✓\n"
 
 # Фикс для Termux
-echo -e "\n${YELLOW}Настройка окружения Termux...${NC}"
+printf "${PURPLE}• Настройка Termux...${NC}"
 {
-    pkg install -y termux-exec libpcre2 && \
-    termux-exec && \
-    export LD_PRELOAD=$PREFIX/lib/libtermux-exec.so
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка настройки Termux!"
+    pkg install -y termux-exec libpcre2 >/dev/null 2>&1 && \
+    termux-exec >/dev/null 2>&1 && \
+    export LD_PRELOAD=$PREFIX/lib/libtermux-exec.so >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
 
 # Обновление пакетов
-echo -e "\n${YELLOW}Обновление системы...${NC}"
+printf "${PURPLE}• Обновление системы...${NC}"
 {
-    pkg update -y && \
-    pkg upgrade -y
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка обновления пакетов!"
-echo -e "${GREEN}✓ Система обновлена${NC}"
+    pkg update -y >/dev/null 2>&1 && \
+    pkg upgrade -y >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
 
-# Установка основных зависимостей
-echo -e "\n${YELLOW}Установка зависимостей...${NC}"
+# Установка зависимостей
+printf "${PURPLE}• Установка зависимостей...${NC}"
 {
-    pkg install -y python git wget libjpeg-turbo openssl grep
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка установки зависимостей!"
-echo -e "${GREEN}✓ Зависимости установлены${NC}"
+    pkg install -y python git wget libjpeg-turbo openssl >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
+
+# Обновление pip
+printf "${PURPLE}• Обновление pip...${NC}"
+{
+    pip install --upgrade pip wheel >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
+
+# Загрузка requirements.txt
+printf "${PURPLE}• Загрузка библиотек...${NC}"
+{
+    wget -q https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt -O /tmp/hurobot_req.txt 2>/dev/null || \
+    curl -s -o /tmp/hurobot_req.txt https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt 2>/dev/null
+} & spinner
+printf "\b✓\n"
 
 # Установка Python-библиотек
-echo -e "\n${YELLOW}Обновление pip...${NC}"
+printf "${PURPLE}• Установка Python-пакетов...${NC}"
 {
-    pip install --upgrade pip wheel
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка обновления pip!"
-
-# Загрузка requirements.txt из репозитория
-echo -e "\n${YELLOW}Загрузка списка библиотек...${NC}"
-{
-    wget -q https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt -O /tmp/hurobot_requirements.txt || \
-    curl -s -o /tmp/hurobot_requirements.txt https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt
-} & spinner || error_exit "Ошибка загрузки requirements.txt!"
-
-# Установка библиотек из requirements.txt
-echo -e "\n${YELLOW}Установка Python-библиотек...${NC}"
-{
-    pip install -r /tmp/hurobot_requirements.txt
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка установки библиотек!"
-echo -e "${GREEN}✓ Библиотеки Python установлены${NC}"
+    pip install -r /tmp/hurobot_req.txt >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
 
 # Клонирование репозитория
-echo -e "\n${YELLOW}Загрузка HURObot...${NC}"
+printf "${PURPLE}• Загрузка HURObot...${NC}"
 {
     rm -rf ~/hurobot 2>/dev/null && \
-    git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot
-} & spinner || error_exit "Ошибка загрузки бота!"
-echo -e "${GREEN}✓ Бот успешно загружен${NC}"
+    git clone -q https://github.com/rud1x/HuroBot_tg.git ~/hurobot 2>/dev/null
+} & spinner
+printf "\b✓\n"
 
 # Настройка алиаса
-echo -e "\n${YELLOW}Настройка алиаса...${NC}"
+printf "${PURPLE}• Настройка команд...${NC}"
 {
     echo -e "\nalias hurobot='cd ~/hurobot && python hurobot.py'" >> ~/.bashrc && \
-    source ~/.bashrc
-} >/dev/null 2>&1 & spinner || error_exit "Ошибка настройки алиаса!"
-echo -e "${GREEN}✓ Алиас настроен${NC}"
+    source ~/.bashrc >/dev/null 2>&1
+} & spinner
+printf "\b✓\n"
 
 # Завершение
-echo -e "\n${CYAN}✅ Установка успешно завершена!${NC}"
-echo -e "Для запуска бота используйте команду:"
-echo -e "   ${YELLOW}hurobot${NC}"
-echo -e "\nЕсли команда не работает, выполните:"
-echo -e "   ${YELLOW}source ~/.bashrc${NC}"
-echo -e "или перезапустите Termux"
+echo -e "\n${DARK_PURPLE}╔════════════════════════════════════╗"
+echo -e "║          УСТАНОВКА ЗАВЕРШЕНА         ║"
+echo -e "╚════════════════════════════════════╝${NC}"
+echo -e "${LIGHT_PURPLE}Команда для запуска: ${PURPLE}hurobot${NC}"
+echo -e "${LIGHT_PURPLE}Если не работает: ${PURPLE}source ~/.bashrc${NC}\n"
