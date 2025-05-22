@@ -30,25 +30,52 @@ import telethon
 import whois
 import traceback
 
-sys.stderr = open(os.devnull, 'w')
-
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
 # ======================
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/hurobot.py"
 VERSION_PATTERN = r"# HURObot - Полный исправленный код \((\d{1,2} \w+ \d{4})\)"
 
-async def force_update():
-    """Принудительное обновление скрипта с установкой зависимостей только при изменениях"""
-    try:
-        REQUIREMENTS_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt"
-        LOCAL_REQUIREMENTS = "hurobot_requirements.txt"
-        HASH_FILE = ".requirements_hash"
 
-        # Проверка обновлений основного скрипта
+MESSAGE_CACHE = {}
+
+
+async def force_update():
+    """Принудительное обновление скрипта с установкой зависимостей"""
+    try:
+        # URL файла requirements.txt в репозитории
+        REQUIREMENTS_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/requirements.txt"
+        
+        print(f"\n{COLORS['header']}Проверка зависимостей...{COLORS['reset']}")
+        
+        try:
+            # Скачиваем requirements.txt
+            response = requests.get(REQUIREMENTS_URL, timeout=10)
+            response.raise_for_status()
+            
+            # Сохраняем во временный файл
+            with open("temp_requirements.txt", "w", encoding="utf-8") as f:
+                f.write(response.text)
+            
+            # Устанавливаем библиотеки через pip
+            print(f"{COLORS['info']}Установка/обновление библиотек...{COLORS['reset']}")
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-r", "temp_requirements.txt", "--upgrade"],
+                check=True
+            )
+            print(f"{COLORS['success']}✓ Библиотеки успешно обновлены!{COLORS['reset']}")
+            
+            # Удаляем временный файл
+            os.remove("temp_requirements.txt")
+            
+        except Exception as e:
+            print(f"{COLORS['error']}✖ Ошибка установки библиотек: {str(e)}{COLORS['reset']}")
+            traceback.print_exc()
+        
+        # Далее идет оригинальный код обновления скрипта...
         print(f"\n{COLORS['header']}Проверка актуальности файлов...{COLORS['reset']}")
         
-        # Получение удаленной версии скрипта
+        # Получение удаленной версии
         with urllib.request.urlopen(GITHUB_RAW_URL) as response:
             remote_content = response.read().decode('utf-8')
             remote_version = re.search(VERSION_PATTERN, remote_content).group(1)
@@ -58,55 +85,15 @@ async def force_update():
             current_content = f.read()
             current_version = re.search(VERSION_PATTERN, current_content).group(1)
             
-        # Проверка хешей основного скрипта
+        # Проверка хешей
         if hashlib.md5(current_content.encode()).hexdigest() == hashlib.md5(remote_content.encode()).hexdigest():
-            script_updated = False
-        else:
-            script_updated = True
-
-        # Проверка обновлений requirements.txt
-        response = requests.get(REQUIREMENTS_URL, timeout=10)
-        response.raise_for_status()
-        remote_req_hash = hashlib.md5(response.text.encode()).hexdigest()
-        
-        # Чтение локального хеша
-        local_req_hash = None
-        if os.path.exists(HASH_FILE):
-            with open(HASH_FILE, 'r') as f:
-                local_req_hash = f.read().strip()
-
-        # Проверка необходимости обновления зависимостей
-        if remote_req_hash != local_req_hash:
-            print(f"{COLORS['info']}Обнаружены изменения в зависимостях...{COLORS['reset']}")
-            
-            # Сохраняем новый requirements.txt
-            with open(LOCAL_REQUIREMENTS, "w", encoding="utf-8") as f:
-                f.write(response.text)
-            
-            # Устанавливаем/обновляем библиотеки
-            print(f"{COLORS['info']}Обновление библиотек...{COLORS['reset']}")
-            subprocess.run(
-                [sys.executable, "-m", "pip", "install", "-r", LOCAL_REQUIREMENTS, "--upgrade"],
-                check=True
-            )
-            
-            # Обновляем хеш
-            with open(HASH_FILE, 'w') as f:
-                f.write(remote_req_hash)
-            
-            print(f"{COLORS['success']}✓ Библиотеки обновлены!{COLORS['reset']}")
-            os.remove(LOCAL_REQUIREMENTS)
-        else:
-            print(f"{COLORS['success']}✓ Зависимости актуальны{COLORS['reset']}")
-
-        # Если скрипт не требует обновления
-        if not script_updated:
             return False
             
-        # Обновление основного скрипта
+        # Начало обновления
         print(f"\n{COLORS['success']}Найдено обновление!{COLORS['reset']}")
         print(f"{COLORS['info']}Текущая версия: {current_version}{COLORS['reset']}")
         print(f"{COLORS['success']}Новая версия: {remote_version}{COLORS['reset']}")
+        print(f"\n{COLORS['header']}Загружаю обновление...{COLORS['reset']}")
         
         # Замена файла
         temp_file = "hurobot_temp.py"
@@ -122,7 +109,7 @@ async def force_update():
         sys.exit(0)
         
     except Exception as e:
-        print(f"{COLORS['error']}❌ Ошибка при обновлении: {str(e)}{COLORS['reset']}")
+        print(f"{COLORS['error']}✖ Ошибка при обновлении: {str(e)}{COLORS['reset']}")
         traceback.print_exc()
         return False
 
@@ -135,19 +122,20 @@ if current_version < required_version:
     sys.exit(1)
 
 # Фиолетовая палитра цветов для консоли
+# Красно-белая палитра цветов для консоли
 COLORS = {
-    'header': '\033[38;2;186;85;211m',     # Яркий фиолетовый
-    'input': '\033[38;2;230;230;250m',     # Лавандовый
-    'success': '\033[38;2;221;160;221m',   # Розовато-фиолетовый
-    'error': '\033[38;2;255;0;255m',       # Яркий пурпурный
-    'info': '\033[38;2;147;112;219m',      # Средне-фиолетовый
-    'prompt': '\033[38;2;218;112;214m',    # Орхидея
-    'accent1': '\033[38;2;138;43;226m',    # Сине-фиолетовый
-    'accent2': '\033[38;2;148;0;211m',     # Темный фиолетовый
-    'accent3': '\033[38;2;153;50;204m',    # Темная орхидея
-    'reset': '\033[0m'                   
+    'header': '\033[91m',          # Ярко-красный
+    'input': '\033[97m',           # Белый
+    'success': '\033[92m',         # Зелёный
+    'error': '\033[91m',           # Красный
+    'info': '\033[37m',            # Светло-серый
+    'prompt': '\033[97m',          # Белый
+    'accent1': '\033[31m',         # Тёмно-красный
+    'accent2': '\033[90m',         # Тёмно-серый (для разделителей)
+    'accent3': '\033[97m',         # Белый
+    'accent4': '\033[38;2;255;69;0m',  # Оранжево-красный (RGB)
+    'reset': '\033[0m'
 }
-
 # Замените на ваши API_ID и API_HASH с my.telegram.org
 API_ID = 21551581  
 API_HASH = '70d80bdf86811654363e45c01c349e98'  
@@ -167,14 +155,13 @@ def show_banner():
     except:
         version = "N/A"
     
-    print(f"""{COLORS['accent1']}
-                __    ___  ___    ___  _____ 
-  /\  /\/\ /\  /__\  /___\/ __\  /___\/__   \ 
- / /_/ / / \ \/ \// //  //__\// //  //  / /\/ 
-/ __  /\ \_/ / _  \/ \_// \/  \/ \_//  / /    
-\/ /_/  \___/\/ \_/\___/\_____/\___/   \/     
+    print(rf"""{COLORS['accent1']}                __    ___  {COLORS['accent3']}___    ___  _____ {COLORS['reset']}
+{COLORS['accent1']}  /\  /\/\ /\  /__\  /___\{COLORS['accent3']}/ __\  /___\/__   \ {COLORS['reset']}
+{COLORS['accent1']} / /_/ / / \ \/ \// //  /{COLORS['accent3']}/__\// //  //  / /\/ {COLORS['reset']}
+{COLORS['accent1']}/ __  /\ \_/ / _  \/ \_/{COLORS['accent3']}/ \/  \/ \_//  / /    {COLORS['reset']}
+{COLORS['accent1']}\/ /_/  \___/\/ \_/\___/{COLORS['accent3']}\_____/\___/   \/     {COLORS['reset']}
 
-{COLORS['header']}Версия на {version} // Тгк - @hurodev\n{COLORS['reset']}""")
+{COLORS['header']}Версия на {version} /{COLORS['accent3']}/ Тгк - @hurodev{COLORS['reset']}""")
     print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
 
 def clear_screen():
@@ -220,7 +207,7 @@ async def delete_all_accounts():
         if await safe_delete(session_file):
             del ACCOUNT_DATA[account_num]
             deleted += 1
-    print(f"{COLORS['success']}Удалено аккаунтов: {deleted}{COLORS['reset']}")
+    print(f"{COLORS['error']}[✓]ㅤ{COLORS['prompt']}Удалено аккаунтов: {deleted}{COLORS['reset']}")
     await asyncio.sleep(1)
 
 async def create_account():
@@ -234,13 +221,13 @@ async def create_account():
         await safe_delete(TEMP_SESSION)
         
         while True:
-            phone = input(f"{COLORS['prompt']}Введите номер [формат: +79123456789]: {COLORS['reset']}").strip()
+            phone = input(f"{COLORS['error']}[+]ㅤ{COLORS['prompt']}Введите номер [формат: +79123456789]: {COLORS['reset']}").strip()
             if re.match(r'^\+\d{8,15}$', phone):
                 break
-            print(f"{COLORS['error']}❌ Неверный формат! Пример: +79123456789{COLORS['reset']}")
+            print(f"{COLORS['error']}[✖]ㅤ{COLORS['prompt']}Неверный формат! Пример: +79123456789{COLORS['reset']}")
 
         if any(acc['phone'] == phone for acc in ACCOUNT_DATA.values()):
-            print(f"{COLORS['error']}❌ Этот номер уже зарегистрирован!{COLORS['reset']}")
+            print(f"{COLORS['error']}[✖]ㅤ{COLORS['prompt']} Этот номер уже зарегистрирован!{COLORS['reset']}")
             await asyncio.sleep(1)
             return
 
@@ -248,14 +235,14 @@ async def create_account():
         await client.connect()
 
         sent_code = await client.send_code_request(phone)
-        print(f"\n{COLORS['success']}✓ Код отправлен на {phone}{COLORS['reset']}")
+        print(f"{COLORS['error']}[✓]ㅤ{COLORS['prompt']}Код отправлен на {phone}{COLORS['reset']}")
 
-        code = input(f"{COLORS['prompt']}Введите код из Telegram: {COLORS['reset']}").strip().replace(' ', '')
+        code = input(f"{COLORS['error']}[-]ㅤ{COLORS['prompt']}Введите код из Telegram: {COLORS['reset']}").strip().replace(' ', '')
 
         try:
             await client.sign_in(phone, code=code, phone_code_hash=sent_code.phone_code_hash)
         except SessionPasswordNeededError:
-            password = getpass(f"{COLORS['prompt']}🔐 Введите 2FA пароль (скрыт): {COLORS['reset']}")
+            password = getpass(f"{COLORS['error']}[*]ㅤ{COLORS['prompt']}Введите 2FA пароль (скрыт): {COLORS['reset']}")
             await client.sign_in(password=password)
 
         me = await client.get_me()
@@ -276,15 +263,15 @@ async def create_account():
             'session': new_session
         }
 
-        print(f"\n{COLORS['success']}✓ Успешно! {me.first_name} добавлен{COLORS['reset']}")
+        print(f"{COLORS['error']}[✓]ㅤ{COLORS['prompt']}Успешно! {me.first_name} добавлен{COLORS['reset']}")
         await load_valid_accounts()
 
     except PhoneNumberInvalidError:
-        print(f"{COLORS['error']}❌ Неверный номер телефона!{COLORS['reset']}")
+        print(f"{COLORS['error']}[✖]ㅤ{COLORS['prompt']}Неверный номер телефона!{COLORS['reset']}")
     except PhoneCodeInvalidError:
-        print(f"{COLORS['error']}❌ Неверный код подтверждения!{COLORS['reset']}")
+        print(f"{COLORS['error']}[✖]ㅤ{COLORS['prompt']}Неверный код подтверждения!{COLORS['reset']}")
     except Exception as e:
-        print(f"{COLORS['error']}❌ Критическая ошибка: {str(e)}{COLORS['reset']}")
+        print(f"{COLORS['error']}[✖]ㅤ{COLORS['prompt']}Критическая ошибка: {str(e)}{COLORS['reset']}")
 
         traceback.print_exc()
     finally:
@@ -306,6 +293,8 @@ def compress_image(image_bytes):
     except Exception as e:
         print(f"{COLORS['error']}Ошибка сжатия изображения: {str(e)}{COLORS['reset']}")
         return image_bytes
+
+
 
 # -------------------------------
 # ОСНОВНАЯ ЛОГИКА
@@ -368,6 +357,92 @@ async def shorten_url(url):
         print(f"{COLORS['error']}Ошибка при сокращении URL: {str(e)}{COLORS['reset']}")
         return url
 
+async def cache_message_handler(event):
+    """Кэширует сообщения для последующего сохранения при удалении"""
+    try:
+        if not event.is_private:
+            return
+        
+        # Кэшируем только последние 100 сообщений для каждого чата
+        chat_id = event.chat_id
+        if chat_id not in MESSAGE_CACHE:
+            MESSAGE_CACHE[chat_id] = {}
+        
+        # Ограничиваем размер кэша
+        if len(MESSAGE_CACHE[chat_id]) > 100:
+            oldest_id = min(MESSAGE_CACHE[chat_id].keys())
+            del MESSAGE_CACHE[chat_id][oldest_id]
+        
+        # Сохраняем информацию о сообщении
+        msg = event.message
+        MESSAGE_CACHE[chat_id][msg.id] = {
+            'text': msg.text,
+            'date': msg.date,
+            'has_media': bool(msg.media),
+            'media_type': str(type(msg.media).__name__) if msg.media else None,
+            'sender_id': msg.sender_id
+        }
+    except:
+        pass
+
+# Добавьте эту функцию в ваш код
+async def save_deleted_message(client, event):
+    """Сохраняет удаленные сообщения в Избранное"""
+    try:
+        if not event.is_private:
+            return
+
+        for msg_id in event.deleted_ids:
+            try:
+                # Получаем сообщение через архив
+                msg = await client.get_messages(event.chat_id, ids=msg_id)
+                
+                # Формируем базовую информацию
+                sender = await msg.get_sender()
+                caption = (
+                    f"🔐 Удаленное сообщение\n"
+                    f"👤 От: {sender.first_name} (@{sender.username})\n"
+                    f"🕒 Отправлено: {msg.date.astimezone(pytz.timezone('Europe/Moscow')).strftime('%d.%m.%Y %H:%M:%S')}\n"
+                    f"🚮 Удалено: {get_moscow_time()}\n"
+                )
+
+                # Обработка медиафайлов
+                media_info = ""
+                if msg.media:
+                    if hasattr(msg.media, 'photo'):
+                        media_info = "📸 Фото | "
+                        media_info += f"Размер: {msg.media.photo.sizes[-1].w}x{msg.media.photo.sizes[-1].h}"
+                    elif hasattr(msg.media, 'document'):
+                        doc = msg.media.document
+                        media_info = f"📁 {doc.mime_type} | "
+                        media_info += f"Размер: {round(doc.size/1024/1024, 2)}MB"
+                        if hasattr(doc.attributes[0], 'file_name'):
+                            media_info += f" | Имя: {doc.attributes[0].file_name}"
+                
+                # Добавляем текст сообщения
+                text_content = f"📝 Текст: {msg.text}" if msg.text else "❌ Текст отсутствует"
+                
+                # Формируем окончательный текст
+                full_caption = f"{caption}{media_info}\n{text_content}\n\n🛡️ Автосохранение HURObot"
+
+                # Сохраняем контент
+                if msg.media:
+                    media = await client.download_media(msg.media)
+                    await client.send_file(
+                        'me',
+                        media,
+                        caption=full_caption,
+                        force_document=True
+                    )
+                else:
+                    await client.send_message('me', full_caption)
+
+            except Exception as e:
+                continue
+
+    except Exception as e:
+        pass
+
 # -------------------------------
 # КЛАСС СОСТОЯНИЯ КЛИЕНТА
 # -------------------------------
@@ -412,7 +487,7 @@ async def run_account(account_num):
         while running:
             user_input = await asyncio.get_event_loop().run_in_executor(
                 None, input, 
-                f"{COLORS['prompt']}\n==>{COLORS['reset']}"
+                f"{COLORS['header']}\n==>{COLORS['reset']}"
             )
             if user_input.strip() == '1':
                 running = False
@@ -424,7 +499,7 @@ async def run_account(account_num):
             client._hurobot_state = state
             input_task = asyncio.create_task(console_input_listener())
 
-            async def keep_online_task():
+            """async def keep_online_task():
                 while state.keep_online and client.is_connected():
                     try:
                         await client(UpdateStatusRequest(offline=False))
@@ -434,9 +509,9 @@ async def run_account(account_num):
                         await asyncio.sleep(e.seconds + 5)
                     except Exception as e:
                         print(f"{COLORS['error']}Ошибка онлайна: {str(e)}{COLORS['reset']}")
-                        await asyncio.sleep(60)
+                        await asyncio.sleep(60)"""
 
-            async def spam_online_task():
+            """async def spam_online_task():
                 while state.spam_online and client.is_connected():
                     try:
                         if time.time() - state.last_user_activity < 60:
@@ -450,7 +525,7 @@ async def run_account(account_num):
                         await asyncio.sleep(e.seconds + 5)
                     except Exception as e:
                         print(f"{COLORS['error']}Ошибка мигающего онлайна: {str(e)}{COLORS['reset']}")
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(10) """
 
             # Словарь с описаниями команд
             command_info = {
@@ -460,7 +535,7 @@ async def run_account(account_num):
                     'syntax': '`.help` [название команды]',
                     'example': '`.help sonl`'
                 },
-                'onl': {
+                """'onl': {
                     'name': 'onl',
                     'description': 'Включает или выключает режим вечного онлайна (статус "онлайн" обновляется каждые 30–40 секунд).',
                     'syntax': '`.onl` [on/off]',
@@ -471,7 +546,7 @@ async def run_account(account_num):
                     'description': 'Включает или выключает мигающий онлайн (статус меняется каждую секунду). Не работает, если включён .onl.',
                     'syntax': '`.sonl` [on/off]',
                     'example': '`.sonl on`'
-                },
+                },"""
                 'save': {
                     'name': 'save',
                     'description': 'Сохраняет самоудаляющееся фото из личного чата в "Избранное".',
@@ -543,8 +618,8 @@ async def run_account(account_num):
                     'description': 'Показывает информацию о домене (регистрация, владелец, DNS и т.д.)',
                     'syntax': '`.whois` [домен]',
                     'example': '`.whois google.com`'
-                },
                 }
+                }  
 
             def get_usage_instructions(command_name, status=None):
                 """Возвращает инструкцию по использованию команды."""
@@ -608,7 +683,7 @@ async def run_account(account_num):
                                    "**HURObot // @hurodev**")
 
             # 3. .onl - Вечный онлайн
-            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.onl(?:\s+(on|off))?$'))
+            """@client.on(events.NewMessage(outgoing=True, pattern=r'^\.onl(?:\s+(on|off))?$'))
             async def online_handler(event):
                 state.last_user_activity = time.time()
                 action = event.pattern_match.group(1)
@@ -710,7 +785,7 @@ async def run_account(account_num):
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot // @hurodev**")"""
 
             # 5. .clone - Клонирование поста
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.clone(?:\s+(.+))?$'))
@@ -1003,6 +1078,14 @@ async def run_account(account_num):
                                    f"➤ {str(e)}\n"
                                    "\n"
                                    "**HURObot // @hurodev**")
+            #удаленые сообщения
+            @client.on(events.MessageDeleted())
+            async def deleted_handler(event):
+                try:
+                    if event.is_private:
+                        await save_deleted_message(client, event)
+                except:
+                    pass
 
             # 13. .data - Информация о пользователе
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.data$'))
@@ -1129,10 +1212,10 @@ async def run_account(account_num):
                     )
                     output = "\n".join([
                         line.replace("[x]", "📛")
-                            .replace("[-]", "❌")
+                            .replace("[-]", "✖")
                             .replace("[+]", "✅")
                             .replace("Email used", "<b>✔️ Зарегистрирована</b>")
-                            .replace("Email not used", "<b>❌ Не зарегистрирована</b>")
+                            .replace("Email not used", "<b>✖ Не зарегистрирована</b>")
                         for line in result.stdout.split('\n')[4:-4]
                     ])
                     await event.edit(
@@ -1181,11 +1264,9 @@ async def run_account(account_num):
                 command = event.pattern_match.group(1)
                 if not command:
                     help_text = """
-✦ Список команд:
+**✦ Список команд:**
 
 ➤ `.help` - Показать это меню
-➤ `.onl` [on/off] - Вечный онлайн 
-➤ `.sonl` [on/off] - Мигающий онлайн 
 ➤ `.save` - Сохранить самоудаляющееся фото
 ➤ `.clone` [url] - Клонировать пост 
 ➤ `.short` [url] - Сократить ссылку 
@@ -1199,6 +1280,9 @@ async def run_account(account_num):
 ➤ `.osint` [телефон/ip/почта] - пробив
 ➤ `.whois` [домен] - Информация о домене
 ➤ Для справки: `.help [название команды]`
+
+**✦ Фоновые функции:**
+➤ Сохранение самоудаляющиеся фото
 
 **HURObot // @hurodev**
                     """
@@ -1225,12 +1309,13 @@ async def run_account(account_num):
             # Вывод в консоль после запуска
             clear_screen()
             show_banner()
-            print(f"{COLORS['success']}Бот запущен!{COLORS['reset']}")
-            print(f"{COLORS['prompt']}Аккаунт: {name} (+{phone}){COLORS['reset']}")
-            print(f"{COLORS['header']}  .help -- список команд{COLORS['reset']}")
-            print(f"{COLORS['header']}  .help [название команды] -- справка{COLORS['reset']}")
-            print(f"{COLORS['header']}Для выхода введите 1 {COLORS['reset']}")
+            print(f"{COLORS['accent1']}ㅤㅤㅤБот запущен!\n{COLORS['reset']}")
+            print(f"{COLORS['header']}Аккаунт:{COLORS['input']} {name}")
+            print(f"{COLORS['header']}Номер телефона:{COLORS['input']} +{phone}{COLORS['reset']}\n")
+            print(f"{COLORS['header']}  .help{COLORS['input']} - список команд{COLORS['reset']}")
+            print(f"{COLORS['header']}  .help [команда]{COLORS['input']} - справка{COLORS['reset']}")
             print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
+            print(f"{COLORS['header']}Для выхода введите 1 {COLORS['reset']}")
             await client.run_until_disconnected()
 
     except Exception as e:
@@ -1269,7 +1354,7 @@ async def main_menu():
         print(f"{COLORS['header']}[-] {COLORS['info']}Удалить все аккаунты{COLORS['reset']}")
         print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
         
-        choice = input(f"{COLORS['prompt']}\n==>{COLORS['reset']}")
+        choice = input(f"{COLORS['header']}\n==>{COLORS['reset']}")
         
         if choice == "0":
             await create_account()
