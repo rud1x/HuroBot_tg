@@ -30,6 +30,8 @@ import telethon
 import whois
 import traceback
 
+sys.stderr = open(os.devnull, 'w')
+
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
 # ======================
