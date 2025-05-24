@@ -1300,13 +1300,13 @@ async def run_account(account_num):
 async def main_menu():
     """Основное меню для управления аккаунтами."""
     # Принудительное обновление при запуске
-    #try:
-        #clear_screen()
-        #show_banner()
-        #if await force_update():
-            #return
-    #except:
-        #pass
+    try:
+        clear_screen()
+        show_banner()
+        if await force_update():
+            return
+    except:
+        pass
 
     while True:
         clear_screen()
