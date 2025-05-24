@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (25 Мая 2025)
+    # HURObot - (v1.0.0)
 import os
 import asyncio
 import sys
@@ -36,7 +36,7 @@ from telethon.tl import types
 # СИСТЕМА ОБНОВЛЕНИЙ
 # ======================
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/hurobot.py"
-VERSION_PATTERN = r"# HURObot - Полный исправленный код \((\d{1,2} \w+ \d{4})\)"
+VERSION_PATTERN = r"# HURObot - \((v\d+\.\d+\.\d+)\)"
 
 
 MESSAGE_CACHE = {}
@@ -163,7 +163,7 @@ def show_banner():
 {COLORS['accent1']}/ __  /\ \_/ / _  \/ \_/{COLORS['accent3']}/ \/  \/ \_//  / /    {COLORS['reset']}
 {COLORS['accent1']}\/ /_/  \___/\/ \_/\___/{COLORS['accent3']}\_____/\___/   \/     {COLORS['reset']}
 
-{COLORS['header']}Версия на {version} /{COLORS['accent3']}/ Тгк - @hurodev{COLORS['reset']}""")
+{COLORS['header']}Версия {version} /{COLORS['accent3']}/ Тгк - @hurodev{COLORS['reset']}""")
     print(f"{COLORS['accent2']}-{COLORS['reset']}" * 50)
 
 def clear_screen():
