@@ -930,7 +930,7 @@ async def run_account(account_num):
                     
                 if not args or not args[0] or not args[1]:
                     await event.edit(
-                        "<b>✦ Укажите количество и сообщение!</b>\n➤ **Пример:**\n➤ <code>.spam [количество] [сообщение]</code>",
+                        "<b>✦ Укажите количество и сообщение!</b>\n➤ <b>Пример:<\b>\n➤ <code>.spam [количество] [сообщение]</code>",
                         parse_mode='html'
                     )
                     return
