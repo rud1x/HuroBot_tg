@@ -980,11 +980,11 @@ async def run_account(account_num):
                         await asyncio.sleep(0.3)
 
                 except FloodWaitError as e:
-                    print(f"⏳ Флуд-контроль: {e.seconds} сек")
+                    print(f"✦ Флуд-контроль: {e.seconds} сек")
                     await asyncio.sleep(e.seconds)
                     
                 except Exception as e:
-                    print(f"🚨 Ошибка: {str(e)}")
+                    print(f"✦ Ошибка: {str(e)}")
 
 
             # 12. .up - Многократные упоминания
