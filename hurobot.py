@@ -1,4 +1,4 @@
-    # HURObot - Полный исправленный код (24 Мая 2025)
+    # HURObot - Полный исправленный код (25 Мая 2025)
 import os
 import asyncio
 import sys
@@ -930,7 +930,7 @@ async def run_account(account_num):
                     
                 if not args or not args[0] or not args[1]:
                     await event.edit(
-                        "<b>✦ Укажите количество и сообщение!</b>\n➤ <b>Пример:<\b>\n➤ <code>.spam [количество] [сообщение]</code>",
+                        "<b>✦ Укажите количество и сообщение!</b>\n➤ **Пример:**\n➤ <code>.spam [количество] [сообщение]</code>",
                         parse_mode='html'
                     )
                     return
@@ -1110,11 +1110,11 @@ async def run_account(account_num):
                         response = (
                             f"<b>✦ Результаты проверки IP:</b>\n"
                             f"➤ <b>Цель:</b> <code>{ip}</code>\n"
-                            f"├ <b>Провайдер:</b> <code>{data['connection']['isp']}</code>\n"
-                            f"├ <b>Страна:</b> {data['flag']['emoji']} <code>{data['country']}</code>\n"
-                            f"├ <b>Город:</b> <code>{data['city']}</code>\n"
-                            f"├ <b>Координаты:</b> <code>{data['latitude']}, {data['longitude']}</code>\n"
-                            f"└ <b>Карта:</b> <a href='https://www.google.com/maps/@{data['latitude']},{data['longitude']},15z'>ссылка</a>\n"
+                            f"➤ <b>Провайдер:</b> <code>{data['connection']['isp']}</code>\n"
+                            f"➤ <b>Страна:</b> {data['flag']['emoji']} <code>{data['country']}</code>\n"
+                            f"➤ <b>Город:</b> <code>{data['city']}</code>\n"
+                            f"➤ <b>Координаты:</b> <code>{data['latitude']}, {data['longitude']}</code>\n"
+                            f"➤ <b>Карта:</b> <a href='https://www.google.com/maps/@{data['latitude']},{data['longitude']},15z'>ссылка</a>\n"
                             "\n<b>HURObot // @hurodev</b>"
                         )
                     else:
@@ -1139,9 +1139,9 @@ async def run_account(account_num):
                     response_text = (
                         f"<b>✦ Результаты проверки номера:</b>\n"
                         f"➤ <b>Цель:</b> <code>{phone}</code>\n"
-                        f"├ <b>Страна:</b> <code>{data.get('country', {}).get('name', 'N/A')}</code>\n"
-                        f"├ <b>Оператор:</b> <code>{data.get('0', {}).get('oper', 'N/A')}</code>\n"
-                        f"└ <b>Часовой пояс:</b> <code>{data.get('capital', {}).get('tz', 'N/A')}</code>\n"
+                        f"➤ <b>Страна:</b> <code>{data.get('country', {}).get('name', 'N/A')}</code>\n"
+                        f"➤ <b>Оператор:</b> <code>{data.get('0', {}).get('oper', 'N/A')}</code>\n"
+                        f"➤ <b>Часовой пояс:</b> <code>{data.get('capital', {}).get('tz', 'N/A')}</code>\n"
                         "\n<b>HURObot // @hurodev</b>"
                     )
                     await event.edit(response_text, parse_mode='html')
@@ -1194,16 +1194,38 @@ async def run_account(account_num):
                     response = (
                         f"<b>✦ Результаты WHOIS:</b>\n"
                         f"➤ <b>Домен:</b> <code>{domain_info.domain_name}</code>\n"
-                        f"├ <b>Создан:</b> <code>{domain_info.creation_date}</code>\n"
-                        f"├ <b>Истекает:</b> <code>{domain_info.expiration_date}</code>\n"
-                        f"├ <b>Регистратор:</b> <code>{domain_info.registrar}</code>\n"
-                        f"├ <b>Владелец:</b> <code>{domain_info.registrant_name or 'N/A'}</code>\n"
-                        f"└ <b>Серверы:</b> <code>{', '.join(domain_info.name_servers) if domain_info.name_servers else 'N/A'}</code>\n"
+                        f"➤ <b>Создан:</b> <code>{domain_info.creation_date}</code>\n"
+                        f"➤ <b>Истекает:</b> <code>{domain_info.expiration_date}</code>\n"
+                        f"➤ <b>Регистратор:</b> <code>{domain_info.registrar}</code>\n"
+                        f"➤ <b>Владелец:</b> <code>{domain_info.registrant_name or 'N/A'}</code>\n"
+                        f"➤ <b>Серверы:</b> <code>{', '.join(domain_info.name_servers) if domain_info.name_servers else 'N/A'}</code>\n"
                         "\n<b>HURObot // @hurodev</b>"
                     )
                     await event.edit(response, parse_mode='html')
                 except Exception as e:
                     await event.edit(f"<b>✦ Ошибка:</b>\n➤<code>{str(e)}</code>", parse_mode='html')
+
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.bot$'))
+            async def bot_info_handler(event):
+                state.last_user_activity = time.time()
+                try:
+                    with open(__file__, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        version = re.search(VERSION_PATTERN, content).group(1)
+                except:
+                    version = "N/A"
+                
+                response = (
+                    f"<b>✦ HURObot — Универсальный Telegram-бот</b>\n\n"
+                    f"➤ <b>Версия:</b> <code>{version}</code>\n"
+                    f"➤ <b>Разработчик:</b> @therudix\n"
+                    f"➤ <b>GitHub:</b> <a href='https://github.com/rud1x/HuroBot_tg'>исходный код</a>\n"
+                    f"➤ <b>Канал обновлений:</b> <a href='https://t.me/hurodev'>@hurodev</a>\n"
+                    f"➤ <b>Лицензия:</b> MIT (открытое ПО)\n"
+                    f"➤ <i>Используйте<i> <code>.help</code> <i>для списка команд</i>\n\n"
+                    f"<b>HURObot // @hurodev</b>"
+                )
+                await event.edit(response, parse_mode='HTML')
 
             # 14. .help - Справка по командам
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.help(?:\s+([a-zA-Z]+))?$'))
@@ -1229,10 +1251,8 @@ async def run_account(account_num):
 ➤ `.whois` [домен] - Информация о домене
 ➤ `.spam` [число] [сообщение] - Спам указаным сообщением
 ➤ `.crash` - спамит тяжолыми стикерами и крашит тг собеседника
+➤ `.bot` - Информация о боте
 ➤ Для справки: `.help [название команды]`
-
-**✦ Фоновые функции:**
-➤ Сохранение самоудаляющиеся фото
 
 **HURObot // @hurodev**
                     """
@@ -1280,13 +1300,13 @@ async def run_account(account_num):
 async def main_menu():
     """Основное меню для управления аккаунтами."""
     # Принудительное обновление при запуске
-    try:
-        clear_screen()
-        show_banner()
-        if await force_update():
-            return
-    except:
-        pass
+    #try:
+        #clear_screen()
+        #show_banner()
+        #if await force_update():
+            #return
+    #except:
+        #pass
 
     while True:
         clear_screen()
