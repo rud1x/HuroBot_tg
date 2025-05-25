@@ -4,3 +4,4 @@ pillow
 python-whois
 pytz
 asyncio
+fake-useragent
