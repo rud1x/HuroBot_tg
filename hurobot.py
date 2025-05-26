@@ -1,4 +1,4 @@
-    # HURObot - (v1.1.0)
+    # HURObot - (v1.1.1)
 import os
 import asyncio
 import aiohttp
@@ -338,7 +338,7 @@ async def save_self_destruct_photo(client, event):
             f"➤ Время сохранения (МСК): {get_moscow_time()}\n"
             f"➤ ID сообщения: {event.id}\n"
             "\n"
-            "**HURObot // @hurodev**"
+            "**HURObot**"
         )
 
         await client.send_file(
@@ -630,7 +630,7 @@ async def run_account(account_num):
                         f"➤ Синтаксис: {info['syntax']}\n" \
                         f"➤ Пример: {info['example']}\n" \
                         "\n" \
-                        "**HURObot // @hurodev**"
+                        "**HURObot**"
                 return text
 
             # 1. Автосохранение самоудаляющихся фото
@@ -651,7 +651,7 @@ async def run_account(account_num):
                                    f"➤ Это не самоудаляющееся фото\n"
                                    f"➤ Формат: `.save` (в ответ на фото)\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                     return
                 try:
                     media_bytes = await client.download_media(reply.media, file=bytes)
@@ -664,7 +664,7 @@ async def run_account(account_num):
                         f"➤ Время сохранения (МСК): {get_moscow_time()}\n"
                         f"➤ ID сообщения: {reply.id}\n"
                         "\n"
-                        "**HURObot // @hurodev**"
+                        "**HURObot**"
                     )
                     await client.send_file(
                         'me',
@@ -678,7 +678,7 @@ async def run_account(account_num):
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
 
 
@@ -695,7 +695,7 @@ async def run_account(account_num):
                                    f"➤ Неверный формат ссылки\n"
                                    f"➤ Формат: `.clone https://t.me/канал/123`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                     return
                 try:
                     parts = post_link.split('/')
@@ -710,12 +710,12 @@ async def run_account(account_num):
                     await event.edit(f"✦ Клонирование выполнено\n"
                                    f"➤ Сохранено в \"Избранное\"\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 6. .short - Сокращение URL
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.short(?:\s+(.+))?$'))
@@ -730,7 +730,7 @@ async def run_account(account_num):
                                    f"➤ Укажите действительный URL\n"
                                    f"➤ Формат: `.short https://example.com`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                     return
                 try:
                     short_url = await shorten_url(url)
@@ -738,12 +738,12 @@ async def run_account(account_num):
                                    f"➤ Исходный URL: {url}\n"
                                    f"➤ Короткий URL: {short_url}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 7. .delme - Удаление переписки
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.delme(?:\s+(\d+))?$'))
@@ -756,7 +756,7 @@ async def run_account(account_num):
                     await event.edit(f"✦ Требуется подтверждение\n"
                                    f"➤ Введите: `.delme {confirm_code}`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                     return
                 try:
                     if state.pending_confirmation.get(event.chat_id) == code:
@@ -764,14 +764,14 @@ async def run_account(account_num):
                         await event.edit(f"✦ Переписка удалена\n"
                                        f"➤ Чат очищен\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                     else:
                         await event.edit(get_usage_instructions('delme'))
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 8. .ani - Анимация набора текста
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.ani(?:\s+(on|off))?$'))
@@ -789,21 +789,21 @@ async def run_account(account_num):
                         await event.edit(f"✦ Анимация уже {status}\n"
                                        f"➤ Подробно: `.help ani`\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                         return
                     state.typing_animation = new_state
                     status = "включена" if state.typing_animation else "выключена"
                     await event.edit(f"✦ Анимация {status}\n"
                                    f"➤ Подробно: `.help ani`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                     if not state.typing_animation:
                         await state.stop_animation()
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # Анимация для исходящих текстовых сообщений
             @client.on(events.NewMessage(outgoing=True))
@@ -831,13 +831,13 @@ async def run_account(account_num):
                             await event.edit(f"✦ Ошибка\n"
                                            f"➤ {str(e)}\n"
                                            "\n"
-                                           "**HURObot // @hurodev**")
+                                           "**HURObot**")
                             break
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 9. .sti - Спам стикерами
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.sti(?:\s+(\d+))?$'))
@@ -856,7 +856,7 @@ async def run_account(account_num):
                                        f"➤ Ответьте на стикер\n"
                                        f"➤ Формат: `.sti 10`\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                         return
                     for _ in range(count):
                         await reply.reply(file=reply.sticker)
@@ -866,12 +866,12 @@ async def run_account(account_num):
                                    f"➤ Укажите число\n"
                                    f"➤ Формат: `.sti 10`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 10. .tagall - Упоминание всех участников
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.tagall$'))
@@ -884,17 +884,17 @@ async def run_account(account_num):
                         await event.edit(f"✦ Ошибка\n"
                                        f"➤ Нет участников с username\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                         return
                     await event.edit(f"✦ Упоминание выполнено\n"
                                    f"➤ Упомянуты: {mentions}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # 11. .iter - Экспорт участников чата
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.iter(?:\s+(-n))?$'))
@@ -909,7 +909,7 @@ async def run_account(account_num):
                         await event.edit(f"✦ Ошибка\n"
                                        f"➤ Нет участников в чате\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                         return
                     with open("members.txt", "w", encoding="utf-8") as f:
                         for p in participants:
@@ -920,19 +920,19 @@ async def run_account(account_num):
                         f"➤ Чат: {chat_link}\n"
                         f"➤ Время (МСК): {get_moscow_time()}\n"
                         "\n"
-                        "**HURObot // @hurodev**"
+                        "**HURObot**"
                     )
                     await client.send_file('me', "members.txt", caption=caption)
                     os.remove("members.txt")
                     await event.edit(f"✦ Экспорт выполнен\n"
                                    f"➤ Сохранено в \"Избранное\"\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.spam(?:\s+(\d+)\s+(.+))?$'))
             async def spam_handler(event):
@@ -978,13 +978,13 @@ async def run_account(account_num):
                     await event.edit(
                         f"✦ Неверный формат!\n"
                         f"➤ Пример: {command_info['bomb']['example']}"
-                        f"\n**HURObot // @hurodev**"
+                        f"\n**HURObot**"
                     )
                     return
 
                 try:
                     stop_flag = threading.Event()
-                    msg = await event.edit(f"✦ Атака запущена\n➤ Номер: `{number}`\n\n**HURObot // @hurodev**")
+                    msg = await event.edit(f"✦ Атака запущена\n➤ Номер: `{number}`\n\n**HURObot**")
 
                     # Получаем текущий event loop
                     loop = asyncio.get_event_loop()
@@ -1005,7 +1005,7 @@ async def run_account(account_num):
                     async def auto_stop():
                         await asyncio.sleep(300)
                         stop_flag.set()
-                        await msg.edit(f"✦ Атака завершена\n➤ Номер: `{number}`\n\n**HURObot // @hurodev**")
+                        await msg.edit(f"✦ Атака завершена\n➤ Номер: `{number}`\n\n**HURObot**")
 
                     asyncio.create_task(auto_stop())
 
@@ -1086,7 +1086,7 @@ async def run_account(account_num):
                                        f"➤ У пользователя нет username\n"
                                        f"➤ Формат: `.up 5`\n"
                                        "\n"
-                                       "**HURObot // @hurodev**")
+                                       "**HURObot**")
                         return
                     for _ in range(count):
                         msg = await client.send_message(event.chat_id, f"@{user.username}")
@@ -1095,18 +1095,18 @@ async def run_account(account_num):
                                    f"➤ Количество: {count} упоминаний\n"
                                    f"➤ Пользователь: @{user.username}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except ValueError:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ Укажите число\n"
                                    f"➤ Формат: `.up 5`\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
             #удаленые сообщения
             @client.on(events.MessageDeleted())
             async def deleted_handler(event):
@@ -1145,12 +1145,12 @@ async def run_account(account_num):
                     await event.edit(f"✦ Данные пользователя\n"
                                    f"➤ {user_info.replace('\n', '\n➤ ')}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
                 except Exception as e:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ {str(e)}\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.osint(?:\s+(.+))?$'))
             async def osint_handler(event):
@@ -1336,7 +1336,7 @@ async def run_account(account_num):
 ➤ `.bot` - Информация о боте
 ➤ Для справки: `.help [название команды]`
 
-**HURObot // @hurodev**
+**HURObot**
                     """
                     await event.edit(help_text)
                     return
@@ -1349,14 +1349,14 @@ async def run_account(account_num):
                                f"➤ Синтаксис: {info['syntax']}\n" \
                                f"➤ Пример: {info['example']}\n" \
                                "\n" \
-                               "**HURObot // @hurodev**"
+                               "**HURObot**"
                     await event.edit(help_text)
                 else:
                     await event.edit(f"✦ Ошибка\n"
                                    f"➤ Команда '{command}' не найдена\n"
                                    f"➤ Используйте: `.help` для списка команд\n"
                                    "\n"
-                                   "**HURObot // @hurodev**")
+                                   "**HURObot**")
 
             # Вывод в консоль после запуска
             clear_screen()
