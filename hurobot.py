@@ -1,4 +1,4 @@
-    # HURObot - (v1.1.1)
+    # HURObot - (v1.1.2)
 import os
 import asyncio
 import aiohttp
@@ -143,7 +143,7 @@ COLORS = {
     'accent4': '\033[38;2;255;69;0m',  # Оранжево-красный (RGB)
     'reset': '\033[0m'
 }
-# Замените на ваши API_ID и API_HASH с my.telegram.org
+
 API_ID = 21551581  
 API_HASH = '70d80bdf86811654363e45c01c349e98'  
 SESSION_PREFIX = "account_"
@@ -750,28 +750,69 @@ async def run_account(account_num):
             async def delme_handler(event):
                 state.last_user_activity = time.time()
                 code = event.pattern_match.group(1)
+                
+                # Запрос подтверждения
                 if not code:
                     confirm_code = ''.join(random.choices('0123456789', k=4))
                     state.pending_confirmation[event.chat_id] = confirm_code
-                    await event.edit(f"✦ Требуется подтверждение\n"
-                                   f"➤ Введите: `.delme {confirm_code}`\n"
-                                   "\n"
-                                   "**HURObot**")
+                    await event.edit(
+                        f"✦ **Подтвердите удаление**\n"
+                        f"➤ Будет удалено ВСЕ ваши сообщения в этом чате\n"
+                        f"➤ Введите: `.delme {confirm_code}`\n\n"
+                        "**HURObot**"
+                    )
                     return
+
                 try:
-                    if state.pending_confirmation.get(event.chat_id) == code:
-                        await client(DeleteHistoryRequest(peer=event.chat_id, max_id=0, just_clear=True))
-                        await event.edit(f"✦ Переписка удалена\n"
-                                       f"➤ Чат очищен\n"
-                                       "\n"
-                                       "**HURObot**")
-                    else:
-                        await event.edit(get_usage_instructions('delme'))
+                    # Проверка кода
+                    if state.pending_confirmation.get(event.chat_id) != code:
+                        await event.edit("✦ Неверный код!\n\n**HURObot**")
+                        return
+
+                    # Получаем ВСЕ свои сообщения
+                    all_messages = []
+                    async for message in client.iter_messages(
+                        event.chat_id, 
+                        from_user="me", 
+                        reverse=True  # Начиная с самых старых
+                    ):
+                        all_messages.append(message)
+
+                    total = len(all_messages)
+                    if total == 0:
+                        await event.edit("✦ Сообщений не найдено!\n\n**HURObot**")
+                        return
+
+                    deleted = 0
+                    progress_msg = await event.edit(f"➤ Удалено: 0/{total}")
+
+                    # Удаляем каждое сообщение
+                    for idx, msg in enumerate(all_messages, 1):
+                        try:
+                            await msg.delete()
+                            deleted += 1
+                            if idx % 3 == 0:  # Обновление прогресса
+                                await progress_msg.edit(f"➤ Удалено: {deleted}/{total}")
+                            await asyncio.sleep(1)  # Защита от флуда
+                        except FloodWaitError as e:
+                            await asyncio.sleep(e.seconds + 2)
+                        except Exception as e:
+                            continue
+
+                    # Финал
+                    await progress_msg.delete()
+                    result = await event.respond(
+                        f"✦ **Удалено {deleted}/{total} сообщений**\n"
+                        f"➤ Чат: `{event.chat.title if hasattr(event.chat, 'title') else 'ЛС'}`\n\n"
+                        "**HURObot**"
+                    )
+                    await asyncio.sleep(5)
+                    await result.delete()
+
                 except Exception as e:
-                    await event.edit(f"✦ Ошибка\n"
-                                   f"➤ {str(e)}\n"
-                                   "\n"
-                                   "**HURObot**")
+                    await event.edit(f"✦ **Ошибка:** `{str(e)}`\n\n**HURObot**")
+                finally:
+                    state.pending_confirmation.pop(event.chat_id, None)
 
             # 8. .ani - Анимация набора текста
             @client.on(events.NewMessage(outgoing=True, pattern=r'^\.ani(?:\s+(on|off))?$'))
@@ -1382,13 +1423,13 @@ async def run_account(account_num):
 async def main_menu():
     """Основное меню для управления аккаунтами."""
     # Принудительное обновление при запуске
-    #try:
-        #clear_screen()
-        #show_banner()
-        #if await force_update():
-            #return
-    #except:
-        #pass
+    try:
+        clear_screen()
+        show_banner()
+        if await force_update():
+            return
+    except:
+        pass
 
     while True:
         clear_screen()
