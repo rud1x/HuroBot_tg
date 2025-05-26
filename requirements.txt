@@ -5,3 +5,4 @@ python-whois
 pytz
 asyncio
 fake-useragent
+aiohttp
