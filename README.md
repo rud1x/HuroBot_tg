@@ -4,7 +4,7 @@
 
 [![Telethon](https://img.shields.io/badge/Telethon-1.36%2B-blue)](https://docs.telethon.dev/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-red)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-red)]( LICENSE )
 
 ---
 
