@@ -1,8 +1,11 @@
 telethon>=1.36.0
+aiohttp
 requests
-pillow
 python-whois
 pytz
-asyncio
+Pillow
+python-dotenv
+qrcode[pil]
+colorama
+python-socks[asyncio]
 fake-useragent
-aiohttp

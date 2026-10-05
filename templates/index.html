@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d0505">
+    <title>HuroBot · панель</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0505;
+            --bg-card: #140808;
+            --bg-card-hover: #1a0a0a;
+            --bg-modal: #0d0606;
+            --border: #2a1414;
+            --border-bright: #3a1c1c;
+            --red: #e53935;
+            --red-bright: #ff5252;
+            --red-dim: #8b1a1a;
+            --red-glow: rgba(229, 57, 53, 0.4);
+            --white: #ffffff;
+            --white-dim: #e8e8e8;
+            --gray: #a8a8a8;
+            --gray-dim: #6b6b6b;
+            --gray-dark: #4a4a4a;
+            --green: #22c55e;
+            --green-glow: rgba(34, 197, 94, 0.4);
+            --radius: 12px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at top, rgba(229, 57, 53, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at bottom, rgba(139, 26, 26, 0.04) 0%, transparent 60%);
+            color: var(--white-dim);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: calc(20px + var(--safe-top)) 16px calc(20px + var(--safe-bottom));
+            max-width: 720px;
+            margin: 0 auto;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red-glow), 0 0 24px var(--red-glow);
+            animation: pulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--gray);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--red);
+            color: var(--red-bright);
+            transform: scale(1.05);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ver {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--red);
+            padding: 4px 12px;
+            border: 1px solid var(--red-dim);
+            border-radius: 20px;
+            background: rgba(229, 57, 53, 0.08);
+        }
+
+        /* === Аккаунты === */
+        .account {
+            display: flex;
+            gap: 14px;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            animation: fadeInUp 0.4s backwards;
+            transition: all 0.25s;
+            position: relative;
+            align-items: center;
+        }
+
+        .account::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--red);
+            border-radius: var(--radius) 0 0 var(--radius);
+            opacity: 0.6;
+        }
+
+        .account:hover {
+            border-color: var(--red-dim);
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .account-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--red);
+            position: relative;
+        }
+
+        .account-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .account-avatar.online {
+            border-color: var(--green);
+            box-shadow: 0 0 12px var(--green-glow);
+        }
+
+        .account-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .account-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .account-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--gray-dim);
+        }
+
+        .account-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .account-status {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            color: var(--gray-dim);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .account-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .account-status.online {
+            color: var(--green);
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .account-status.online::before {
+            box-shadow: 0 0 8px var(--green-glow);
+            animation: pulse 2s infinite;
+        }
+
+        .account-status.offline {
+            color: var(--gray-dim);
+        }
+
+        .account-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* === Кнопки === */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--gray);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+            text-transform: lowercase;
+        }
+
+        .btn:hover { border-color: var(--red); color: var(--red-bright); }
+        .btn:active { transform: scale(0.97); }
+
+        .btn.primary {
+            background: var(--red);
+            color: var(--white);
+            border-color: var(--red);
+            box-shadow: 0 4px 16px rgba(229, 57, 53, 0.25);
+        }
+
+        .btn.primary:hover {
+            background: var(--red-bright);
+            border-color: var(--red-bright);
+        }
+
+        .btn.icon-only {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn.loading { color: transparent; pointer-events: none; }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            color: var(--white);
+        }
+
+        .btn.primary.loading::after { color: var(--white); }
+        .btn:not(.primary).loading::after { color: var(--red); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* === Empty === */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-dim);
+            font-size: 14px;
+            animation: fadeInUp 0.4s;
+        }
+
+        .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; color: var(--red-dim); }
+
+        .actions-bottom {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .actions-bottom .btn {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 13px;
+        }
+
+        /* === Скелетоны === */
+        .skeleton {
+            display: flex;
+            gap: 14px;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .skeleton-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, var(--border) 0%, rgba(229, 57, 53, 0.1) 50%, var(--border) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            flex-shrink: 0;
+        }
+
+        .skeleton-body { flex: 1; }
+        .skeleton-line {
+            height: 12px;
+            background: linear-gradient(90deg, var(--border) 0%, rgba(229, 57, 53, 0.1) 50%, var(--border) 100%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-line.short { width: 40%; margin-top: 8px; height: 10px; }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* === Формы === */
+        .form-section {
+            margin-bottom: 20px;
+            padding: 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .form-section:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .form-section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--red);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, var(--border-bright), transparent);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-group label {
+            font-size: 10px;
+            color: var(--gray);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--white);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .form-group input::placeholder { color: var(--gray-dark); }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--red);
+            background: var(--bg-card-hover);
+            box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+        }
+
+        .form-group small {
+            font-size: 11px;
+            color: var(--gray-dim);
+            line-height: 1.4;
+        }
+
+        /* === Модалка === */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-modal);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px;
+            position: relative;
+            transform: translateY(10px) scale(0.98);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--gray);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+
+        .modal-close:hover {
+            border-color: var(--red);
+            color: var(--red-bright);
+            transform: rotate(90deg);
+        }
+
+        .modal h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--white);
+            padding-right: 40px;
+        }
+
+        .modal-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--gray-dim);
+            margin-bottom: 20px;
+        }
+
+        /* === Модалка логов === */
+        .modal-logs {
+            max-width: 100%;
+            width: 100%;
+            height: 90vh;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-logs .logs {
+            flex: 1;
+            height: auto;
+            max-height: none;
+            overflow-y: auto;
+        }
+
+        .logs {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #060303;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            overflow-y: auto;
+            color: var(--gray);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.7;
+        }
+
+        .logs .line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(229, 57, 53, 0.04);
+            animation: fadeIn 0.2s;
+        }
+
+        .logs .line::before {
+            content: '› ';
+            color: var(--red-dim);
+        }
+
+        /* === Статусы === */
+        .status-text {
+            font-size: 12px;
+            color: var(--gray);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            display: none;
+        }
+
+        .status-text.show { display: block; }
+
+        .status-text.ok {
+            color: var(--green);
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-text.err {
+            color: var(--red-bright);
+            background: rgba(229, 57, 53, 0.06);
+            border: 1px solid var(--red-dim);
+        }
+
+        .status-text.loading {
+            color: var(--gray);
+            background: rgba(229, 57, 53, 0.03);
+            border: 1px solid var(--border);
+        }
+
+        .status-text.loading::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--red);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* === Переключатель === */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--white);
+        }
+
+        .toggle-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--gray-dim);
+            margin-top: 2px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 20px;
+            background: var(--border);
+            cursor: pointer;
+            transition: all 0.25s;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gray);
+            transition: all 0.25s;
+        }
+
+        .toggle-switch.on {
+            background: var(--red);
+        }
+
+        .toggle-switch.on::after {
+            left: 22px;
+            background: var(--white);
+        }
+
+        /* === Тосты === */
+        .toast-container {
+            position: fixed;
+            bottom: calc(20px + var(--safe-bottom));
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            pointer-events: none;
+            max-width: calc(100vw - 40px);
+        }
+
+        .toast {
+            padding: 12px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            backdrop-filter: blur(12px);
+            color: var(--white-dim);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            animation: toastIn 0.3s;
+            pointer-events: auto;
+            max-width: 320px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .toast.out { animation: toastOut 0.3s forwards; }
+        .toast.ok { border-color: rgba(34, 197, 94, 0.3); }
+        .toast.err { border-color: var(--red-dim); }
+        .toast-icon { flex-shrink: 0; font-size: 16px; }
+        .toast.ok .toast-icon { color: var(--green); }
+        .toast.err .toast-icon { color: var(--red-bright); }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
+
+        /* === Футер === */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--gray-dark);
+            text-align: center;
+        }
+
+        .footer a { color: var(--red-dim); text-decoration: none; transition: color 0.2s; }
+        .footer a:hover { color: var(--red-bright); }
+        .footer::before { content: '// '; color: var(--red-dim); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        @media (max-width: 640px) {
+            body { padding: calc(14px + var(--safe-top)) 12px calc(14px + var(--safe-bottom)); }
+            .header h1 { font-size: 16px; }
+            .icon-btn { width: 34px; height: 34px; font-size: 13px; }
+            .ver { font-size: 10px; padding: 3px 10px; }
+
+            .account { padding: 14px; gap: 12px; }
+            .account-avatar { width: 46px; height: 46px; font-size: 18px; }
+            .account-name { font-size: 14px; }
+            .account-meta { font-size: 10px; gap: 8px; }
+            .account-actions { gap: 4px; }
+            .btn.icon-only { width: 30px; height: 30px; }
+
+            .form-section { padding: 14px; }
+            .modal { padding: 20px; }
+
+            .toast-container {
+                bottom: calc(12px + var(--safe-bottom));
+                right: 12px;
+                left: 12px;
+                max-width: none;
+            }
+            .toast { max-width: none; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--red-dim); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-dot"></div>
+            <h1>hurobot</h1>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" onclick="openSettings()" title="настройки">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="openLogs()" title="логи">›_</button>
+            <span class="ver">__VERSION__</span>
+        </div>
+    </div>
+
+    <div id="accounts">
+        <div class="skeleton">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-body">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+            </div>
+        </div>
+        <div class="skeleton">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-body">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions-bottom">
+        <button class="btn primary" onclick="openAdd()">+ добавить аккаунт</button>
+    </div>
+
+    <div class="footer">
+        hurobot · <a href="https://t.me/hurodev" target="_blank">@hurodev</a>
+    </div>
+
+    <!-- Модалка добавления -->
+    <div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeAdd()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAdd()">×</button>
+            <h3>новый аккаунт</h3>
+            <div class="modal-subtitle">вход в telegram</div>
+
+            <div class="form-group">
+                <label>номер телефона</label>
+                <input type="tel" id="phone" placeholder="+79123456789" autocomplete="off" inputmode="tel">
+            </div>
+
+            <div class="form-group" id="code-group" style="display:none;">
+                <label>код из telegram</label>
+                <input type="text" id="code" placeholder="12345" autocomplete="off" inputmode="numeric">
+            </div>
+
+            <div class="form-group" id="pass-group" style="display:none;">
+                <label>облачный пароль (2fa)</label>
+                <input type="password" id="password" placeholder="пароль" autocomplete="off">
+                <small>если не помнишь — сбрось через telegram: настройки → конфиденциальность → облачный пароль</small>
+            </div>
+
+            <div class="status-text" id="add-status"></div>
+
+            <button class="btn primary" id="add-btn" onclick="submitAdd()" style="width:100%;">отправить код</button>
+        </div>
+    </div>
+
+    <!-- Модалка настроек -->
+    <div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeSettings()">×</button>
+            <h3>настройки</h3>
+            <div class="modal-subtitle">.env файл</div>
+
+            <div class="form-section">
+                <div class="form-section-title">telegram api</div>
+                <div class="form-group">
+                    <label>api_id</label>
+                    <input type="text" id="env-API_ID" placeholder="оставь пустым для публичных">
+                </div>
+                <div class="form-group">
+                    <label>api_hash</label>
+                    <input type="text" id="env-API_HASH" placeholder="оставь пустым для публичных">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">прокси</div>
+                <div class="form-group">
+                    <label>proxy_type</label>
+                    <select id="env-PROXY_TYPE">
+                        <option value="">— нет —</option>
+                        <option value="mtproto">mtproto</option>
+                        <option value="socks5">socks5</option>
+                        <option value="http">http</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>proxy_host</label>
+                    <input type="text" id="env-PROXY_HOST" placeholder="127.0.0.1">
+                </div>
+                <div class="form-group">
+                    <label>proxy_port</label>
+                    <input type="text" id="env-PROXY_PORT" placeholder="1443" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label>proxy_secret (mtproto)</label>
+                    <input type="text" id="env-PROXY_SECRET" placeholder="dd0123...">
+                </div>
+                <div class="form-group">
+                    <label>proxy_user</label>
+                    <input type="text" id="env-PROXY_USER">
+                </div>
+                <div class="form-group">
+                    <label>proxy_pass</label>
+                    <input type="password" id="env-PROXY_PASS">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">веб-панель</div>
+                <div class="form-group">
+                    <label>web_port</label>
+                    <input type="text" id="env-WEB_PORT" placeholder="8080" inputmode="numeric">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">автостарт</div>
+                <div class="form-group">
+                    <label>id аккаунтов</label>
+                    <input type="text" id="env-AUTOSTART" placeholder="1,3,5" inputmode="numeric">
+                    <small>список id через запятую — эти аккаунты запустятся при старте бота</small>
+                </div>
+            </div>
+
+            <div class="status-text" id="env-status"></div>
+
+            <button class="btn primary" onclick="saveEnv()" style="width:100%;">сохранить</button>
+        </div>
+    </div>
+
+    <!-- Модалка настроек аккаунта -->
+    <div class="modal-overlay" id="accountModal" onclick="if(event.target===this)closeAccountModal()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeAccountModal()">×</button>
+            <h3 id="accountModalName">аккаунт</h3>
+            <div class="modal-subtitle" id="accountModalPhone"></div>
+
+            <div id="accountModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Модалка логов -->
+    <div class="modal-overlay" id="logsModal" onclick="if(event.target===this)closeLogs()">
+        <div class="modal modal-logs">
+            <button class="modal-close" onclick="closeLogs()">×</button>
+            <h3>логи</h3>
+            <div class="modal-subtitle">live · websocket</div>
+            <div class="logs" id="logs"></div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function escapeHtml(s) {
+            if (!s) return '';
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function fmtUptime(sec) {
+            if (!sec || sec < 1) return '';
+            if (sec < 60) return sec + 'с';
+            const m = Math.floor(sec / 60);
+            if (m < 60) return m + 'м';
+            const h = Math.floor(m / 60);
+            const mm = m % 60;
+            if (h < 24) return h + 'ч ' + mm + 'м';
+            const d = Math.floor(h / 24);
+            return d + 'д ' + (h % 24) + 'ч';
+        }
+
+        function showToast(text, kind = 'ok', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + kind;
+            const icon = kind === 'ok' ? '✓' : kind === 'err' ? '✕' : '●';
+            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${escapeHtml(text)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('out');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        async function loadAccounts(showSkeleton = false) {
+            if (showSkeleton) {
+                document.getElementById('accounts').innerHTML = `
+                    <div class="skeleton">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-body">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                    </div>`;
+            }
+            try {
+                const res = await fetch('/api/accounts');
+                const data = await res.json();
+                const c = document.getElementById('accounts');
+
+                if (!data.accounts || data.accounts.length === 0) {
+                    c.innerHTML = `
+                        <div class="empty">
+                            <div class="empty-icon">●</div>
+                            нет аккаунтов.<br>нажми «добавить аккаунт».
+                        </div>`;
+                    return;
+                }
+
+                c.innerHTML = data.accounts.map((a, i) => {
+                    const initial = (a.name || '?').charAt(0).toUpperCase();
+                    const avatarInner = a.has_avatar
+                        ? `<img src="/api/avatar/${a.id}?t=${Date.now()}" alt="">`
+                        : initial;
+
+                    const uptime = a.running && a.uptime > 0 ? fmtUptime(a.uptime) : '';
+                    const autostartBadge = a.autostart ? `<span>⚡ авто</span>` : '';
+
+                    return `
+                        <div class="account" style="animation-delay:${i * 0.05}s">
+                            <div class="account-avatar ${a.running ? 'online' : ''}">${avatarInner}</div>
+                            <div class="account-body">
+                                <div class="account-name">${escapeHtml(a.name)}</div>
+                                <div class="account-meta">
+                                    <span>+${escapeHtml(a.phone)}</span>
+                                    <span class="account-status ${a.running ? 'online' : 'offline'}">${a.running ? 'online' : 'offline'}</span>
+                                    ${uptime ? `<span>⏱ ${uptime}</span>` : ''}
+                                    ${autostartBadge}
+                                </div>
+                            </div>
+                            <div class="account-actions">
+                                ${a.running
+                                    ? `<button class="btn icon-only" onclick="stopAccount(${a.id}, this)" title="стоп">■</button>`
+                                    : `<button class="btn primary icon-only" onclick="startAccount(${a.id}, this)" title="старт">▶</button>`
+                                }
+                                <button class="btn icon-only" onclick="openAccountModal(${a.id})" title="настройки аккаунта">⚙</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function startAccount(id, btn) {
+            btn.classList.add('loading');
+            try {
+                const res = await fetch('/api/start/' + id, { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) showToast(data.message || 'аккаунт запущен', 'ok');
+                else showToast(data.error || 'ошибка запуска', 'err');
+            } catch (e) {
+                showToast('ошибка сети', 'err');
+            } finally {
+                btn.classList.remove('loading');
+                setTimeout(loadAccounts, 500);
+            }
+        }
+
+        async function stopAccount(id, btn) {
+            btn.classList.add('loading');
+            try {
+                const res = await fetch('/api/stop/' + id, { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) showToast('аккаунт остановлен', 'ok');
+                else showToast(data.error || 'ошибка', 'err');
+            } catch (e) {
+                showToast('ошибка сети', 'err');
+            } finally {
+                btn.classList.remove('loading');
+                setTimeout(loadAccounts, 500);
+            }
+        }
+
+        /* === Модалка аккаунта === */
+        async function openAccountModal(id) {
+            const modal = document.getElementById('accountModal');
+            const nameEl = document.getElementById('accountModalName');
+            const phoneEl = document.getElementById('accountModalPhone');
+            const content = document.getElementById('accountModalContent');
+
+            const res = await fetch('/api/accounts');
+            const data = await res.json();
+            const acc = data.accounts.find(a => a.id === id);
+            if (!acc) return;
+
+            nameEl.textContent = acc.name;
+            phoneEl.textContent = '+' + acc.phone;
+
+            content.innerHTML = `
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">автостарт</div>
+                        <div class="toggle-sub">запускать при старте бота</div>
+                    </div>
+                    <div class="toggle-switch ${acc.autostart ? 'on' : ''}" onclick="toggleAutostart(${acc.id}, this)"></div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+                    <button class="btn" onclick="refreshAvatar(${acc.id}, this)" style="flex:1;">обновить аву</button>
+                    <button class="btn" onclick="deleteAccount(${acc.id}, this)" style="flex:1; border-color:var(--red-dim); color:var(--red-bright);">удалить</button>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeAccountModal() {
+            document.getElementById('accountModal').classList.remove('active');
+        }
+
+        async function toggleAutostart(id, el) {
+            const res = await fetch('/api/accounts');
+            const data = await res.json();
+            const acc = data.accounts.find(a => a.id === id);
+            if (!acc) return;
+
+            const envRes = await fetch('/api/env');
+            const envData = await envRes.json();
+
+            let autostart = (envData.env.AUTOSTART || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (acc.autostart) {
+                autostart = autostart.filter(x => x !== String(id));
+            } else {
+                if (!autostart.includes(String(id))) autostart.push(String(id));
+            }
+
+            await fetch('/api/env', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ AUTOSTART: autostart.join(',') }),
+            });
+
+            el.classList.toggle('on');
+            showToast(acc.autostart ? 'автостарт выключен' : 'автостарт включён', 'ok');
+            loadAccounts();
+        }
+
+        async function refreshAvatar(id, btn) {
+            btn.classList.add('loading');
+            try {
+                const res = await fetch('/api/account/' + id + '/refresh-avatar', { method: 'POST' });
+                const data = await res.json();
+                if (data.ok) showToast('аватарка обновлена', 'ok');
+                else showToast(data.error || 'ошибка', 'err');
+            } catch (e) {
+                showToast('ошибка сети', 'err');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        async function deleteAccount(id, btn) {
+            if (!confirm('удалить аккаунт? сессия и аватарка будут удалены.')) return;
+            btn.classList.add('loading');
+            try {
+                const res = await fetch('/api/account/' + id, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.ok) {
+                    showToast('аккаунт удалён', 'ok');
+                    closeAccountModal();
+                    loadAccounts();
+                } else {
+                    showToast(data.error || 'ошибка', 'err');
+                }
+            } catch (e) {
+                showToast('ошибка сети', 'err');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        /* === Добавление === */
+        let addStage = 'phone';
+        let addPhone = '';
+
+        function openAdd() {
+            resetAddForm();
+            document.getElementById('addModal').classList.add('active');
+            setTimeout(() => document.getElementById('phone').focus(), 200);
+        }
+
+        function closeAdd() {
+            document.getElementById('addModal').classList.remove('active');
+            resetAddForm();
+        }
+
+        async function submitAdd() {
+            const btn = document.getElementById('add-btn');
+            const status = document.getElementById('add-status');
+            const phoneEl = document.getElementById('phone');
+            const codeEl = document.getElementById('code');
+            const passEl = document.getElementById('password');
+
+            btn.disabled = true;
+            btn.classList.add('loading');
+
+            const setStatus = (text, kind = '') => {
+                status.textContent = text;
+                status.className = 'status-text show ' + kind;
+            };
+
+            try {
+                if (addStage === 'phone') {
+                    addPhone = phoneEl.value.trim();
+                    if (!addPhone) { setStatus('введи номер', 'err'); return; }
+                    setStatus('отправляю код...', 'loading');
+                    const res = await fetch('/api/add', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: addPhone, stage: 'phone' }),
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { setStatus(data.error || 'ошибка', 'err'); return; }
+                    setStatus('код отправлен', 'ok');
+                    document.getElementById('code-group').style.display = 'flex';
+                    btn.textContent = 'войти';
+                    addStage = 'code';
+                } else if (addStage === 'code') {
+                    const code = codeEl.value.trim().replace(/\s/g, '');
+                    if (!code) { setStatus('введи код', 'err'); return; }
+                    setStatus('проверяю код...', 'loading');
+                    const res = await fetch('/api/add', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: addPhone, code, stage: 'code' }),
+                    });
+                    const data = await res.json();
+                    if (!data.ok) {
+                        if (data.need_password) {
+                            setStatus('2fa — введи облачный пароль');
+                            document.getElementById('pass-group').style.display = 'flex';
+                            btn.textContent = 'войти с паролем';
+                            addStage = 'password';
+                            return;
+                        }
+                        setStatus(data.error || 'ошибка', 'err');
+                        return;
+                    }
+                    setStatus('аккаунт добавлен', 'ok');
+                    showToast('аккаунт добавлен', 'ok');
+                    setTimeout(() => { closeAdd(); loadAccounts(); }, 800);
+                } else if (addStage === 'password') {
+                    const password = passEl.value;
+                    if (!password) { setStatus('введи пароль', 'err'); return; }
+                    setStatus('проверяю пароль...', 'loading');
+                    const res = await fetch('/api/add', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: addPhone, password, stage: 'password' }),
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { setStatus(data.error || 'неверный пароль', 'err'); return; }
+                    setStatus('аккаунт добавлен', 'ok');
+                    showToast('аккаунт добавлен', 'ok');
+                    setTimeout(() => { closeAdd(); loadAccounts(); }, 800);
+                }
+            } catch (e) {
+                setStatus('ошибка сети: ' + e.message, 'err');
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        }
+
+        function resetAddForm() {
+            addStage = 'phone';
+            addPhone = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('code').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('code-group').style.display = 'none';
+            document.getElementById('pass-group').style.display = 'none';
+            document.getElementById('add-btn').textContent = 'отправить код';
+            const st = document.getElementById('add-status');
+            st.classList.remove('show');
+            st.textContent = '';
+        }
+
+        /* === Настройки === */
+        const ENV_FIELDS = [
+            'API_ID', 'API_HASH', 'PROXY_TYPE', 'PROXY_HOST', 'PROXY_PORT',
+            'PROXY_SECRET', 'PROXY_USER', 'PROXY_PASS', 'WEB_PORT', 'AUTOSTART',
+        ];
+
+        function openSettings() {
+            loadEnv();
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        async function loadEnv() {
+            try {
+                const res = await fetch('/api/env');
+                const data = await res.json();
+                ENV_FIELDS.forEach(field => {
+                    const el = document.getElementById('env-' + field);
+                    if (el && data.env[field] !== undefined) el.value = data.env[field];
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveEnv() {
+            const status = document.getElementById('env-status');
+            status.className = 'status-text show loading';
+            status.textContent = 'сохраняю...';
+
+            const payload = {};
+            ENV_FIELDS.forEach(field => {
+                const el = document.getElementById('env-' + field);
+                if (el) payload[field] = el.value.trim();
+            });
+
+            try {
+                const res = await fetch('/api/env', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    status.textContent = 'сохранено. некоторые настройки требуют перезапуска бота.';
+                    status.className = 'status-text show ok';
+                    showToast('настройки сохранены', 'ok');
+                    loadAccounts();
+                } else {
+                    status.textContent = data.error || 'ошибка';
+                    status.className = 'status-text show err';
+                }
+            } catch (e) {
+                status.textContent = 'ошибка: ' + e.message;
+                status.className = 'status-text show err';
+            }
+        }
+
+        /* === Логи === */
+        let logsWs = null;
+
+        function openLogs() {
+            document.getElementById('logsModal').classList.add('active');
+            if (!logsWs || logsWs.readyState > 1) connectLogsWS();
+        }
+
+        function closeLogs() {
+            document.getElementById('logsModal').classList.remove('active');
+        }
+
+        function connectLogsWS() {
+            logsWs = new WebSocket('ws://' + location.host + '/ws/logs');
+            const logsEl = document.getElementById('logs');
+            logsEl.innerHTML = '';
+
+            logsWs.onmessage = (event) => {
+                const line = document.createElement('div');
+                line.className = 'line';
+                line.textContent = event.data;
+                logsEl.appendChild(line);
+                logsEl.scrollTop = logsEl.scrollHeight;
+            };
+
+            logsWs.onclose = () => {
+                const modal = document.getElementById('logsModal');
+                if (modal.classList.contains('active')) {
+                    setTimeout(connectLogsWS, 2000);
+                }
+            };
+        }
+
+        loadAccounts(true);
+        setInterval(() => loadAccounts(false), 10000);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAdd();
+                closeSettings();
+                closeAccountModal();
+                closeLogs();
+            }
+        });
+    </script>
+</body>
+</html>
