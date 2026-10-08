@@ -106,6 +106,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            text-decoration: none;
         }
 
         .icon-btn:hover {
@@ -116,6 +117,12 @@
 
         .icon-btn:active {
             transform: scale(0.95);
+        }
+
+        .github-star:hover {
+            border-color: #ff4500;
+            color: #ff4500;
+            box-shadow: 0 0 12px rgba(255, 69, 0, 0.35);
         }
 
         .ver {
@@ -660,6 +667,86 @@
             margin-top: 2px;
         }
 
+        .star-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(229, 57, 53, 0.08), rgba(255, 69, 0, 0.04));
+            border: 1px solid var(--red-dim);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--white-dim);
+            font-size: 13px;
+            transition: all 0.25s;
+            animation: slideDown 0.5s 0.1s backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .star-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(229, 57, 53, 0.06), transparent);
+            transform: translateX(-100%);
+            animation: shimmerSlide 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmerSlide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .star-banner:hover {
+            border-color: var(--red);
+            background: linear-gradient(135deg, rgba(229, 57, 53, 0.15), rgba(255, 69, 0, 0.08));
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(229, 57, 53, 0.15);
+        }
+
+        .star-banner.hidden {
+            display: none;
+        }
+
+        .star-icon {
+            flex-shrink: 0;
+            color: var(--red);
+            filter: drop-shadow(0 0 6px rgba(229, 57, 53, 0.5));
+        }
+
+        .star-text {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .star-text strong {
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .star-arrow {
+            color: var(--red-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .star-banner:hover .star-arrow {
+            color: var(--red-bright);
+            transform: translateX(4px);
+        }
+
+        @media (max-width: 640px) {
+            .star-banner {
+                padding: 10px 14px;
+                font-size: 12px;
+                gap: 10px;
+            }
+        }
+
         .toggle-switch {
             position: relative;
             width: 44px;
@@ -813,6 +900,11 @@
             <h1>hurobot</h1>
         </div>
         <div class="header-right">
+            <a href="https://github.com/rud1x/HuroBot_tg" target="_blank" class="icon-btn github-star" title="поставь звезду">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </a>
             <button class="icon-btn" onclick="openSettings()" title="настройки">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
@@ -823,7 +915,15 @@
             <span class="ver">__VERSION__</span>
         </div>
     </div>
-
+    <a href="https://github.com/rud1x/HuroBot_tg" target="_blank" class="star-banner" id="starBanner" onclick="hideStarBanner()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="star-icon">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <span class="star-text">
+            <strong>нравится hurobot?</strong> поставь звезду на github — это помогает проекту
+        </span>
+        <span class="star-arrow">→</span>
+    </a>
     <div id="accounts">
         <div class="skeleton">
             <div class="skeleton-avatar"></div>
