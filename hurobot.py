@@ -1,8 +1,11 @@
 import asyncio
 import sys
 import re
+import json
+import shutil
+import tempfile
+import zipfile
 import importlib
-import hashlib
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -21,7 +24,7 @@ from telethon.errors.rpcerrorlist import TimedOutError
 from config import (
     API_ID, API_HASH, VERSION, COLORS, SESSION_DIR, SESSION_PREFIX,
     TEMP_SESSION, USING_DEFAULT_API, PROXY_ENABLED, PROXY_TYPE, PROXY_HOST,
-    WEB_PORT, AVATAR_DIR, AUTOSTART_IDS, GITHUB_RAW_URL, REQUIREMENTS_URL,
+    WEB_PORT, AVATAR_DIR, AUTOSTART_IDS, GITHUB_API_RELEASES,
     get_telethon_proxy,
 )
 from logger import info, success, error, warning, exception, log
@@ -30,6 +33,9 @@ from database import init_db, cleanup_old_data
 
 VERSION_PATTERN = re.compile(r'VERSION\s*=\s*[\'"](v\d+\.\d+\.\d+)[\'"]')
 PHONE_RE = re.compile(r'^\+\d{8,15}$')
+
+UPDATE_EXCLUDE = {".env", "HuroBot_data", "venv", "__pycache__", ".git", ".venv", ".idea", ".vscode"}
+
 
 def load_command_modules():
     commands_dir = Path(__file__).parent / "commands"
@@ -78,60 +84,133 @@ def banner():
 {COLORS['header']}                    {VERSION} {COLORS['accent2']}//{COLORS['accent3']} @hurodev{COLORS['reset']}""")
 
 
+def _should_skip_update(rel_path: Path) -> bool:
+    if any(part in UPDATE_EXCLUDE for part in rel_path.parts):
+        return True
+    if rel_path.suffix in (".session", ".pyc", ".pyo", ".log", ".pid"):
+        return True
+    if rel_path.name.endswith(("-journal", "-wal", "-shm")):
+        return True
+    return False
+
+
+def _parse_version(s):
+    try:
+        return tuple(int(x) for x in s.lstrip("v").split(".") if x.isdigit())
+    except Exception:
+        return (0,)
+
+
+def _backup_files(base: Path, version: str):
+    backup_dir = base / "HuroBot_data" / f"backup_{version}"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for f in base.rglob("*"):
+        if not f.is_file():
+            continue
+        rel = f.relative_to(base)
+        if _should_skip_update(rel):
+            continue
+        if f.suffix not in (".py", ".html", ".css", ".js", ".md", ".txt", ".sh", ".json"):
+            continue
+        dest = backup_dir / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            shutil.copy2(f, dest)
+            copied += 1
+        except Exception:
+            pass
+    return copied
+
+
 def check_updates():
-    """Проверка новой версии на GitHub."""
+    base = Path(__file__).parent.resolve()
     try:
         req = urllib.request.Request(
-            GITHUB_RAW_URL,
-            headers={"User-Agent": "HuroBot-Updater"},
+            GITHUB_API_RELEASES,
+            headers={
+                "User-Agent": "HuroBot-Updater",
+                "Accept": "application/vnd.github+json",
+            },
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
-            remote = resp.read().decode("utf-8")
+            release = json.loads(resp.read().decode("utf-8"))
 
-        m = VERSION_PATTERN.search(remote)
-        if not m:
+        tag = (release.get("tag_name") or "").strip()
+        if not tag:
+            warning("не удалось получить версию релиза")
             return
 
-        remote_version = m.group(1)
-        if remote_version == VERSION:
-            info(f"Обновлений нет ({VERSION})")
+        if _parse_version(tag) <= _parse_version(VERSION):
+            info(f"обновлений нет ({VERSION})")
             return
 
         print()
-        print_block(f"Доступно обновление: {remote_version}", icon="⬆", color=COLORS["success"])
-        print_kv("Текущая", VERSION)
-        print_kv("Новая", remote_version, COLORS["success"])
+        print_block(f"доступно обновление: {tag}", icon="⬆", color=COLORS["success"])
+        print_kv("текущая", VERSION)
+        print_kv("новая", tag, COLORS["success"])
+        if release.get("name"):
+            print_kv("релиз", release["name"])
         print()
 
-        answer = input(f"{COLORS['header']}Обновить сейчас? (y/N): {COLORS['reset']}").strip().lower()
+        answer = input(f"{COLORS['header']}обновить сейчас? (y/N): {COLORS['reset']}").strip().lower()
         if answer not in ("y", "yes", "д", "да"):
-            info("Обновление отложено")
+            info("обновление отложено")
             return
 
-        script_path = Path(__file__).resolve()
-        temp_path = script_path.with_suffix(".py.new")
-
-        temp_path.write_text(remote, encoding="utf-8")
-
-        try:
-            compile(temp_path.read_text(encoding="utf-8"), str(temp_path), "exec")
-        except SyntaxError as e:
-            error(f"Синтаксическая ошибка в новой версии: {e}")
-            temp_path.unlink()
+        zip_url = release.get("zipball_url")
+        if not zip_url:
+            error("в релизе нет архива исходников")
             return
 
-        backup = script_path.with_suffix(".py.bak")
-        if backup.exists():
-            backup.unlink()
-        script_path.rename(backup)
-        temp_path.rename(script_path)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            zip_path = tmp_path / "release.zip"
 
-        success("Обновлено. Перезапусти бота вручную.")
-        input(f"{COLORS['input']}Нажми Enter для выхода...{COLORS['reset']}")
+            info("скачиваю архив релиза...")
+            req = urllib.request.Request(zip_url, headers={"User-Agent": "HuroBot-Updater"})
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                zip_path.write_bytes(resp.read())
+
+            info("распаковываю...")
+            with zipfile.ZipFile(zip_path) as z:
+                z.extractall(tmp_path / "extracted")
+
+            dirs = [d for d in (tmp_path / "extracted").iterdir() if d.is_dir()]
+            if not dirs:
+                error("архив пустой")
+                return
+            source = dirs[0]
+
+            info("делаю бэкап...")
+            backed = _backup_files(base, VERSION)
+
+            info("обновляю файлы...")
+            updated = 0
+            for f in source.rglob("*"):
+                if not f.is_file():
+                    continue
+                rel = f.relative_to(source)
+                if _should_skip_update(rel):
+                    continue
+                dest = base / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copy2(f, dest)
+                    updated += 1
+                except Exception as e:
+                    warning(f"не обновлён {rel}: {e}")
+
+        success(f"обновлено файлов: {updated}")
+        info(f"бэкап ({backed} файлов) — HuroBot_data/backup_{VERSION}/")
+        print()
+        print(f"{COLORS['header']}перезапусти бота вручную:{COLORS['reset']}")
+        print(f"  {COLORS['accent4']}Ctrl+C → hurobot{COLORS['reset']}")
+        input(f"{COLORS['input']}нажми Enter для выхода...{COLORS['reset']}")
         sys.exit(0)
 
     except Exception as e:
-        warning(f"Проверка обновлений не удалась: {e}")
+        warning(f"проверка обновлений не удалась: {e}")
 
 
 def fmt_uptime(seconds):
@@ -191,7 +270,7 @@ class HuroBot:
                 downloaded = await client.download_profile_photo(me, file=str(path))
                 if not downloaded:
                     return {"ok": False, "error": "у аккаунта нет аватарки"}
-            success(f"Аватарка #{num} обновлена")
+            success(f"аватарка #{num} обновлена")
             return {"ok": True}
         except Exception as e:
             exception(f"refresh_avatar {num}")
@@ -206,7 +285,9 @@ class HuroBot:
         acc = self.accounts.get(num)
         if not acc:
             return {"ok": False, "error": "аккаунт не найден"}
+
         self.starting.add(num)
+
         try:
             name = acc["name"]
             phone = acc["phone"]
@@ -217,15 +298,15 @@ class HuroBot:
             try:
                 await asyncio.wait_for(client.connect(), timeout=15)
             except asyncio.TimeoutError:
-                print_kv("Статус", "таймаут подключения", COLORS["error"])
+                warning(f"аккаунт #{num}: таймаут подключения")
                 return {"ok": False, "error": "таймаут подключения"}
             except Exception as e:
                 exception("start_account.connect")
-                print_kv("Статус", f"ошибка: {e}", COLORS["error"])
+                warning(f"аккаунт #{num}: ошибка {e}")
                 return {"ok": False, "error": str(e)}
 
             if not await client.is_user_authorized():
-                print_kv("Статус", "сессия не авторизована", COLORS["error"])
+                warning(f"аккаунт #{num}: сессия не авторизована")
                 await client.disconnect()
                 return {"ok": False, "error": "сессия не авторизована"}
 
@@ -251,10 +332,8 @@ class HuroBot:
             if not (AVATAR_DIR / f"{num}.jpg").exists():
                 asyncio.create_task(self.refresh_avatar(num))
 
-            print_kv("Команд", str(loaded))
-            print_kv("Статус", "запущен", COLORS["success"])
-            log.info(f"Аккаунт #{num} ({name}) запущен")
-            print()
+            success(f"аккаунт #{num} запущен ({loaded} команд)")
+            log.info(f"аккаунт #{num} ({name}) запущен")
 
             asyncio.create_task(self._run_client(num, client))
 
@@ -272,7 +351,7 @@ class HuroBot:
                     await client.run_until_disconnected()
                     break
                 except (ConnectionError, TimeoutError, TimedOutError):
-                    warning(f"Аккаунт {name}: соединение потеряно, переподключение...")
+                    warning(f"аккаунт {name}: соединение потеряно, переподключение...")
                     await asyncio.sleep(5)
                     try:
                         await client.connect()
@@ -285,7 +364,7 @@ class HuroBot:
             self.clients.pop(num, None)
             self.started_at.pop(num, None)
             self.starting.discard(num)
-            warning(f"Аккаунт {name}: остановлен")
+            warning(f"аккаунт {name}: остановлен")
 
     async def stop_account(self, num):
         acc = self.accounts.get(num, {})
@@ -302,11 +381,7 @@ class HuroBot:
                 pass
         self.started_at.pop(num, None)
 
-        print()
-        print_block(f"Остановка аккаунта #{num}", icon="🛑", color=COLORS["error"])
-        print_kv("Имя", name)
-        print_kv("Статус", "остановлен", COLORS["error"])
-        print()
+        warning(f"аккаунт #{num} остановлен ({name})")
         return {"ok": True}
 
     async def delete_account(self, num):
@@ -330,7 +405,7 @@ class HuroBot:
         self.accounts.pop(num, None)
         self.autostart.discard(num)
 
-        print_kv("Удалён", f"аккаунт #{num}", COLORS["error"])
+        warning(f"удалён аккаунт #{num}")
         return {"ok": True}
 
     async def start_add_account(self, phone):
@@ -352,9 +427,7 @@ class HuroBot:
 
         client = None
         try:
-            print()
-            print_block("Добавление аккаунта", icon="➕")
-            print_kv("Телефон", phone)
+            info(f"добавление аккаунта {phone}")
 
             client = make_client(TEMP_SESSION)
             await asyncio.wait_for(client.connect(), timeout=15)
@@ -366,7 +439,7 @@ class HuroBot:
                 "stage": "code",
             }
 
-            print_kv("Статус", "код отправлен", COLORS["success"])
+            success(f"код отправлен на {phone}")
             return {"ok": True, "stage": "code"}
 
         except PhoneNumberInvalidError:
@@ -398,13 +471,13 @@ class HuroBot:
                 try:
                     await client.sign_in(phone, code=code, phone_code_hash=pending["phone_code_hash"])
                 except SessionPasswordNeededError:
-                    print_kv("2FA", "требуется пароль")
+                    info("требуется 2fa пароль")
                     return {"ok": False, "need_password": True}
             else:
                 try:
                     await client.sign_in(password=password)
                 except PasswordHashInvalidError:
-                    print_kv("2FA", "неверный пароль", COLORS["error"])
+                    warning("неверный 2fa пароль")
                     return {"ok": False, "error": "неверный пароль"}
 
             me = await client.get_me()
@@ -433,9 +506,8 @@ class HuroBot:
             }
 
             self.pending_auth.pop(phone, None)
-            print_kv("Аккаунт", f"{me.first_name} добавлен", COLORS["success"])
-            print()
-            log.info(f"Добавлен аккаунт: {me.first_name}")
+            success(f"аккаунт {me.first_name} добавлен")
+            log.info(f"добавлен аккаунт: {me.first_name}")
             return {"ok": True}
 
         except PhoneCodeInvalidError:
@@ -447,7 +519,7 @@ class HuroBot:
     async def autostart_accounts(self):
         for num in sorted(self.autostart):
             if num in self.accounts and num not in self.running and num not in self.starting:
-                info(f"Автостарт аккаунта #{num}")
+                info(f"автостарт аккаунта #{num}")
                 await self.start_account(num)
                 await asyncio.sleep(1)
 
@@ -495,6 +567,7 @@ async def stats_collector(event):
             )
     except Exception:
         pass
+
 
 async def main():
     banner()
@@ -547,7 +620,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print()
-        info("Завершено")
+        info("завершено")
         sys.exit(0)
     except Exception:
         exception("main")
