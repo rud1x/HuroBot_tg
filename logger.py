@@ -1,16 +1,50 @@
 import logging
-import sys
 from collections import deque
 from logging.handlers import RotatingFileHandler
 from config import LOG_PATH, COLORS
 
 LOG_BUFFER = deque(maxlen=500)
 
+NOISE_SUBSTRINGS = (
+    "Server closed the connection",
+    "Connection to Telegram failed",
+    "Attempt ",
+    "Task was destroyed but it is pending",
+    "Task exception was never retrieved",
+    "Future exception was never retrieved",
+    "SSL handshake failed",
+    "socket.send() raised exception",
+    "Connection reset by peer",
+    "Broken pipe",
+)
+
+QUIET_LOGGERS = (
+    "telethon",
+    "telethon.client",
+    "telethon.client.telegrambaseclient",
+    "telethon.client.updates",
+    "telethon.network",
+    "telethon.network.mtprotosender",
+    "telethon.network.connection",
+    "telethon.extensions",
+    "aiohttp",
+    "aiohttp.access",
+    "aiohttp.server",
+    "aiohttp.client",
+    "asyncio",
+)
+
+
+def _is_noise(msg: str) -> bool:
+    return any(s in msg for s in NOISE_SUBSTRINGS)
+
 
 class BufferHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
+            if _is_noise(msg):
+                return
             LOG_BUFFER.append(msg)
         except Exception:
             pass
@@ -19,6 +53,9 @@ class BufferHandler(logging.Handler):
 class PlainConsoleHandler(logging.Handler):
     def emit(self, record):
         try:
+            raw = record.getMessage()
+            if _is_noise(raw):
+                return
             level = record.levelname
             color = {
                 "INFO": COLORS["info"],
@@ -34,7 +71,7 @@ class PlainConsoleHandler(logging.Handler):
                 "CRITICAL": "×",
                 "DEBUG": "·",
             }.get(level, "·")
-            print(f"{color}{mark} {record.getMessage()}{COLORS['reset']}")
+            print(f"{color}{mark} {raw}{COLORS['reset']}")
         except Exception:
             pass
 
@@ -67,6 +104,9 @@ def setup_logger(name="hurobot"):
     buffer_handler.setLevel(logging.INFO)
     buffer_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s", datefmt="%H:%M:%S"))
     logger.addHandler(buffer_handler)
+
+    for noisy in QUIET_LOGGERS:
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     return logger
 

