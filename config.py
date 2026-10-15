@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass
 
-VERSION = "v1.3.0"
+VERSION = "v1.3.1"
 
 GITHUB_API_RELEASES = "https://api.github.com/repos/rud1x/HuroBot_tg/releases/latest"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/rud1x/HuroBot_tg/main/hurobot.py"
